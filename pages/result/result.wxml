@@ -277,6 +277,15 @@
     style="position: fixed; top: -9999rpx; left: -9999rpx; width: 0rpx; height: 0rpx; opacity: 0;"
   >
   </poster>
+
+  <!-- Painter组件用于海报生成 -->
+  <painter 
+    customStyle="position: absolute; left: -9999rpx; top: -9999rpx;" 
+    palette="{{painterPalette}}" 
+    bind:imgOK="onPainterImgOK" 
+    bind:imgErr="onPainterImgErr" 
+    widthPixels="1000" 
+  />
   
   <!-- 隐藏的canvas用于视频封面生成 -->
   <canvas 

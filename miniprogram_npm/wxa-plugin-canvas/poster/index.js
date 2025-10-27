@@ -1,5 +1,3 @@
-const { t } = require('../../../utils/i18n.js');
-
 Component({
     properties: {
         config: {
@@ -64,7 +62,7 @@ Component({
             })
         },
         onCreate(reset = false) {
-            !this.data.hideLoading && wx.showLoading({ mask: true, title: t('poster.generating') });
+            !this.data.hideLoading && wx.showLoading({ mask: true, title: '生成中' });
             return this.downloadResource(typeof reset === 'boolean' && reset).then(() => {
                 !this.data.hideLoading && wx.hideLoading();
                 const poster = this.selectComponent('#poster');
@@ -72,7 +70,7 @@ Component({
             })
             .catch((err) => {
                 !this.data.hideLoading && wx.hideLoading();
-                wx.showToast({ icon: 'none', title: err.errMsg || t('poster.generateFailed') });
+                wx.showToast({ icon: 'none', title: err.errMsg || '生成失败' });
                 console.error(err);
                 this.triggerEvent('fail', err);
             })

@@ -1,9 +1,9 @@
 // 社区页面
-const http = require('../../services/http.js');
-const authService = require('../../services/auth.js');
-const { IMAGE_URLS } = require('../../constants/index.js');
-const { t, getLang, setLanguage } = require('../../utils/i18n.js');
-import Toast from '@vant/weapp/toast/toast';
+const http = require("../../services/http.js");
+const authService = require("../../services/auth.js");
+const { IMAGE_URLS } = require("../../constants/index.js");
+const { t, getLang, setLanguage } = require("../../utils/i18n.js");
+import Toast from "@vant/weapp/toast/toast";
 
 Page({
   /**
@@ -22,30 +22,30 @@ Page({
     pendingAction: null, // 待执行的行动：'like' 或 'favorite'
     pendingPostId: null, // 待执行的帖子ID
     isProcessing: false, // 防止重复点击
-    language: 'zh', // 语言设置
-    i18n: {} // 国际化文本
+    language: "zh", // 语言设置
+    i18n: {}, // 国际化文本
   },
 
   /**
    * 生命周期函数--监听页面加载
    */
   onLoad(options) {
-    console.log('社区页面加载');
+    console.log("社区页面加载");
     this.initI18n();
     // 设置状态栏高度
     const { statusBarHeight } = wx.getSystemInfoSync();
     this.setData({
-      headerPadding: statusBarHeight + 44 + 20 // 状态栏 + 导航栏 + 额外间距
+      headerPadding: statusBarHeight + 44 + 20, // 状态栏 + 导航栏 + 额外间距
     });
     this.checkLoginStatus();
     this.loadDreamPosts();
-    
+
     // 监听语言变化事件
     this.onLanguageChanged = (newLanguage) => {
-      console.log('社区页面收到语言变化事件:', newLanguage);
+      console.log("社区页面收到语言变化事件:", newLanguage);
       this.initI18n();
     };
-    wx.eventBus && wx.eventBus.on('languageChanged', this.onLanguageChanged);
+    wx.eventBus && wx.eventBus.on("languageChanged", this.onLanguageChanged);
   },
 
   /**
@@ -53,7 +53,7 @@ Page({
    */
   onUnload() {
     // 移除语言变化事件监听
-    wx.eventBus && wx.eventBus.off('languageChanged', this.onLanguageChanged);
+    wx.eventBus && wx.eventBus.off("languageChanged", this.onLanguageChanged);
   },
 
   /**
@@ -62,47 +62,52 @@ Page({
   onShow() {
     // 检查语言是否变化并重新初始化
     const currentLang = getLang();
-    console.log('社区页面 onShow - 当前语言:', currentLang, '页面语言:', this.data.language);
-    
+    console.log(
+      "社区页面 onShow - 当前语言:",
+      currentLang,
+      "页面语言:",
+      this.data.language
+    );
+
     // 强制检查并更新标题，不依赖语言变化检测
     this.initI18n();
-    const newTitle = t('pageTitle.community');
-    console.log('设置新标题:', newTitle);
+    const newTitle = t("pageTitle.community");
+    console.log("设置新标题:", newTitle);
     wx.setNavigationBarTitle({
-      title: newTitle
+      title: newTitle,
     });
-    
+
     this.checkLoginStatus();
     // 通知tabBar更新状态
-    wx.eventBus && wx.eventBus.emit('pageShow');
+    wx.eventBus && wx.eventBus.emit("pageShow");
 
     // 检查是否需要刷新数据（从帖子详情页返回时）
     const app = getApp();
     if (app.globalData && app.globalData.needRefreshCommunity) {
-      console.log('检测到需要刷新社区数据');
-      
+      console.log("检测到需要刷新社区数据");
+
       // 如果有最近更新的帖子信息，优先进行局部更新
       if (app.globalData.lastUpdatedPost) {
         const postIndex = this.data.dreamPosts.findIndex(
-          post => post.postId === app.globalData.lastUpdatedPost.postId
+          (post) => post.postId === app.globalData.lastUpdatedPost.postId
         );
-        
+
         if (postIndex !== -1) {
           const newDreamPosts = [...this.data.dreamPosts];
           newDreamPosts[postIndex] = {
             ...newDreamPosts[postIndex],
-            ...app.globalData.lastUpdatedPost
+            ...app.globalData.lastUpdatedPost,
           };
-          
+
           this.setData({ dreamPosts: newDreamPosts });
-          
+
           // 清除更新标记
           app.globalData.needRefreshCommunity = false;
           app.globalData.lastUpdatedPost = null;
           return;
         }
       }
-      
+
       // 如果找不到对应帖子或没有局部更新信息，则刷新整个列表
       app.globalData.needRefreshCommunity = false;
       this.refreshData();
@@ -119,39 +124,40 @@ Page({
    */
   initI18n() {
     const lang = getLang();
-    
+
     this.setData({
       language: lang,
       i18n: {
         community: {
-          subtitle: t('community.subtitle'),
-          noMoreContent: t('community.noMoreContent'),
-          loading: t('community.loading'),
-          loadingMore: t('community.loadingMore'),
-          emptyTitle: t('community.emptyTitle'),
-          emptyDesc: t('community.emptyDesc'),
-          loginTitle: t('community.loginTitle'),
-          loginSubtitle: t('community.loginSubtitle')
+          subtitle: t("community.subtitle"),
+          noMoreContent: t("community.noMoreContent"),
+          loading: t("community.loading"),
+          loadingMore: t("community.loadingMore"),
+          emptyTitle: t("community.emptyTitle"),
+          emptyDesc: t("community.emptyDesc"),
+          loginTitle: t("community.loginTitle"),
+          loginSubtitle: t("community.loginSubtitle"),
         },
         app: {
-          shareTitle: t('app.shareTitle'),
-          timelineTitle: t('app.timelineTitle')
-        }
-      }
+          shareTitle: t("app.shareTitle"),
+          timelineTitle: t("app.timelineTitle"),
+        },
+      },
     });
-    
+
     // 设置页面标题
     wx.setNavigationBarTitle({
-      title: t('pageTitle.community')
+      title: t("pageTitle.community"),
     });
-    
+
     // 监听语言切换事件
-    wx.eventBus && wx.eventBus.on('languageChanged', () => {
-      // 重新设置页面标题
-      wx.setNavigationBarTitle({
-        title: t('pageTitle.community')
+    wx.eventBus &&
+      wx.eventBus.on("languageChanged", () => {
+        // 重新设置页面标题
+        wx.setNavigationBarTitle({
+          title: t("pageTitle.community"),
+        });
       });
-    });
   },
 
   /**
@@ -160,7 +166,7 @@ Page({
   checkLoginStatus() {
     const isLoggedIn = authService.checkLoginStatus();
     this.setData({
-      isLoggedIn: isLoggedIn
+      isLoggedIn: isLoggedIn,
     });
   },
 
@@ -171,7 +177,7 @@ Page({
     this.setData({
       dreamPosts: [],
       pageNum: 1,
-      hasMore: true
+      hasMore: true,
     });
     this.loadDreamPosts();
   },
@@ -180,15 +186,18 @@ Page({
    * 加载梦境帖子列表
    */
   async loadDreamPosts() {
-    console.log('loadDreamPosts 被调用');
-    console.log('当前状态:', {
+    console.log("loadDreamPosts 被调用");
+    console.log("当前状态:", {
       loading: this.data.loading,
       hasMore: this.data.hasMore,
-      pageNum: this.data.pageNum
+      pageNum: this.data.pageNum,
     });
-    
+
     if (this.data.loading || !this.data.hasMore) {
-      console.log('跳过加载:', { loading: this.data.loading, hasMore: this.data.hasMore });
+      console.log("跳过加载:", {
+        loading: this.data.loading,
+        hasMore: this.data.hasMore,
+      });
       return;
     }
 
@@ -202,9 +211,9 @@ Page({
       //   pageSize: this.data.pageSize
       // });
 
-      const response = await http.get('/dream/posts/public', {
+      const response = await http.get("/dream/posts/public", {
         pageNum: this.data.pageNum,
-        pageSize: this.data.pageSize
+        pageSize: this.data.pageSize,
       });
 
       // console.log('=== API响应 ===');
@@ -223,10 +232,13 @@ Page({
               keywords = JSON.parse(item.keywordsJson);
             }
           } catch (error) {
-            console.error('解析关键词失败:', error);
+            console.error("解析关键词失败:", error);
             // 如果JSON解析失败，尝试按逗号分割
-            if (typeof item.keywordsJson === 'string') {
-              keywords = item.keywordsJson.split(/[,，]/).map(k => k.trim()).filter(k => k && k.length > 0 && k.length < 20);
+            if (typeof item.keywordsJson === "string") {
+              keywords = item.keywordsJson
+                .split(/[,，]/)
+                .map((k) => k.trim())
+                .filter((k) => k && k.length > 0 && k.length < 20);
             }
           }
 
@@ -234,37 +246,40 @@ Page({
             id: item.postId,
             postId: item.postId,
             dreamDescription: item.dreamDescription,
-            imageUrl: item.imageUrl || '',
-            videoUrl: item.videoUrl || '',
-            videoPrompt: item.videoPrompt || '',
+            imageUrl: item.imageUrl || "",
+            videoUrl: item.videoUrl || "",
+            videoPrompt: item.videoPrompt || "",
             likeCount: item.likeCount || 0,
             favoriteCount: item.favoriteCount || 0,
             createdAt: item.createdAt,
             keywords: keywords,
             isLiked: item.isLiked || false,
-            isFavorited: item.isFavorited || false
+            isFavorited: item.isFavorited || false,
           };
         });
 
         // 如果是第一页，直接替换；否则追加
-        const newDreamPosts = this.data.pageNum === 1 ? dreamPosts : [...this.data.dreamPosts, ...dreamPosts];
+        const newDreamPosts =
+          this.data.pageNum === 1
+            ? dreamPosts
+            : [...this.data.dreamPosts, ...dreamPosts];
 
         this.setData({
           dreamPosts: newDreamPosts,
           hasMore: records.length === this.data.pageSize,
-          pageNum: this.data.pageNum + 1
+          pageNum: this.data.pageNum + 1,
         });
       } else {
         this.setData({
-          hasMore: false
+          hasMore: false,
         });
       }
     } catch (error) {
-      console.error('=== 加载梦境帖子失败 ===');
-      console.error('错误信息:', error);
+      console.error("=== 加载梦境帖子失败 ===");
+      console.error("错误信息:", error);
       wx.showToast({
         title: this.data.i18n.community.loadFailed,
-        icon: 'error'
+        icon: "error",
       });
     } finally {
       this.setData({ loading: false });
@@ -279,34 +294,38 @@ Page({
     if (!postId) {
       wx.showToast({
         title: this.data.i18n.community.paramError,
-        icon: 'error'
+        icon: "error",
       });
       return;
     }
 
     // 使用预加载优化页面切换体验
     const eventChannel = this.getOpenerEventChannel();
-    const currentPost = this.data.dreamPosts.find(post => post.postId === postId);
-    
+    const currentPost = this.data.dreamPosts.find(
+      (post) => post.postId === postId
+    );
+
     wx.navigateTo({
       url: `/pages/result/post-detail?postId=${postId}`,
       events: {
         // 可以传递一些数据给详情页
-        acceptDataFromOpenerPage: function(data) {
-          console.log('详情页接收数据:', data);
-        }
+        acceptDataFromOpenerPage: function (data) {
+          console.log("详情页接收数据:", data);
+        },
       },
       success: (res) => {
         // 将当前帖子数据传给详情页，减少加载时间
-        res.eventChannel.emit('acceptDataFromOpenerPage', { data: currentPost });
+        res.eventChannel.emit("acceptDataFromOpenerPage", {
+          data: currentPost,
+        });
       },
       fail: (error) => {
-        console.error('页面跳转失败:', error);
+        console.error("页面跳转失败:", error);
         wx.showToast({
           title: this.data.i18n.community.navigateFailed,
-          icon: 'none'
+          icon: "none",
         });
-      }
+      },
     });
   },
 
@@ -322,7 +341,7 @@ Page({
     if (!postId) {
       wx.showToast({
         title: this.data.i18n.community.paramError,
-        icon: 'error'
+        icon: "error",
       });
       return;
     }
@@ -335,9 +354,9 @@ Page({
     if (!isLoggedIn) {
       this.setData({
         showLoginModal: true,
-        pendingAction: 'like',
+        pendingAction: "like",
         pendingPostId: postId,
-        isProcessing: false
+        isProcessing: false,
       });
       return;
     }
@@ -358,7 +377,7 @@ Page({
     if (!postId) {
       wx.showToast({
         title: this.data.i18n.community.paramError,
-        icon: 'error'
+        icon: "error",
       });
       return;
     }
@@ -371,9 +390,9 @@ Page({
     if (!isLoggedIn) {
       this.setData({
         showLoginModal: true,
-        pendingAction: 'favorite',
+        pendingAction: "favorite",
         pendingPostId: postId,
-        isProcessing: false
+        isProcessing: false,
       });
       return;
     }
@@ -394,12 +413,12 @@ Page({
    * 上拉加载更多
    */
   onReachBottom() {
-    console.log('触发上拉加载更多');
-    console.log('当前状态:', {
+    console.log("触发上拉加载更多");
+    console.log("当前状态:", {
       loading: this.data.loading,
       hasMore: this.data.hasMore,
       pageNum: this.data.pageNum,
-      postsCount: this.data.dreamPosts.length
+      postsCount: this.data.dreamPosts.length,
     });
     this.loadDreamPosts();
   },
@@ -410,10 +429,10 @@ Page({
   checkLoginStatus() {
     try {
       const isLoggedIn = authService.checkLoginStatus();
-      console.log('登录状态检查:', isLoggedIn);
+      console.log("登录状态检查:", isLoggedIn);
       return isLoggedIn;
     } catch (error) {
-      console.error('检查登录状态失败:', error);
+      console.error("检查登录状态失败:", error);
       return false;
     }
   },
@@ -422,30 +441,30 @@ Page({
    * 登录成功回调
    */
   onLoginSuccess(e) {
-    this.setData({ 
+    this.setData({
       showLoginModal: false,
-      isLoggedIn: true
+      isLoggedIn: true,
     });
-    
+
     // 执行待执行的操作
     const { pendingAction } = this.data;
-    if (pendingAction === 'like') {
+    if (pendingAction === "like") {
       // 重新触发点赞操作
       const postId = this.data.pendingPostId;
       if (postId) {
         this.performLike(postId);
       }
-    } else if (pendingAction === 'favorite') {
+    } else if (pendingAction === "favorite") {
       // 重新触发收藏操作
       const postId = this.data.pendingPostId;
       if (postId) {
         this.performFavorite(postId);
       }
     }
-    
-    this.setData({ 
+
+    this.setData({
       pendingAction: null,
-      pendingPostId: null
+      pendingPostId: null,
     });
   },
 
@@ -453,11 +472,11 @@ Page({
    * 关闭登录弹窗
    */
   onCloseLoginModal() {
-    this.setData({ 
+    this.setData({
       showLoginModal: false,
       pendingAction: null,
       pendingPostId: null,
-      isProcessing: false
+      isProcessing: false,
     });
   },
 
@@ -469,11 +488,13 @@ Page({
 
     try {
       // 找到对应的帖子
-      const postIndex = this.data.dreamPosts.findIndex(post => post.postId === postId);
+      const postIndex = this.data.dreamPosts.findIndex(
+        (post) => post.postId === postId
+      );
       if (postIndex === -1) {
         wx.showToast({
           title: this.data.i18n.community.postNotFound,
-          icon: 'error'
+          icon: "error",
         });
         return;
       }
@@ -481,8 +502,8 @@ Page({
       const post = this.data.dreamPosts[postIndex];
 
       // 调用点赞/取消点赞接口
-      const response = await http.post('/dream/posts/like', {
-        postId: postId
+      const response = await http.post("/dream/posts/like", {
+        postId: postId,
       });
 
       if (response && response.code === 0 && response.data) {
@@ -491,29 +512,29 @@ Page({
         newDreamPosts[postIndex] = {
           ...post,
           isLiked: response.data.isLiked,
-          likeCount: response.data.likeCount
+          likeCount: response.data.likeCount,
         };
 
         this.setData({
-          dreamPosts: newDreamPosts
+          dreamPosts: newDreamPosts,
         });
 
         Toast({
-          type: 'success',
-          message: response.data.isLiked ? '点赞成功' : '已取消点赞',
-          duration: 1500
+          type: "success",
+          message: response.data.isLiked ? "点赞成功" : "已取消点赞",
+          duration: 1500,
         });
       } else {
         wx.showToast({
-          title: response?.message || '操作失败',
-          icon: 'error'
+          title: response?.message || "操作失败",
+          icon: "error",
         });
       }
     } catch (error) {
-      console.error('点赞操作失败:', error);
+      console.error("点赞操作失败:", error);
       wx.showToast({
         title: this.data.i18n.community.operationFailed,
-        icon: 'error'
+        icon: "error",
       });
     } finally {
       this.setData({ isProcessing: false });
@@ -528,11 +549,13 @@ Page({
 
     try {
       // 找到对应的帖子
-      const postIndex = this.data.dreamPosts.findIndex(post => post.postId === postId);
+      const postIndex = this.data.dreamPosts.findIndex(
+        (post) => post.postId === postId
+      );
       if (postIndex === -1) {
         wx.showToast({
           title: this.data.i18n.community.postNotFound,
-          icon: 'error'
+          icon: "error",
         });
         return;
       }
@@ -540,8 +563,8 @@ Page({
       const post = this.data.dreamPosts[postIndex];
 
       // 调用收藏/取消收藏接口
-      const response = await http.post('/dream/posts/favorite', {
-        postId: postId
+      const response = await http.post("/dream/posts/favorite", {
+        postId: postId,
       });
 
       if (response && response.code === 0 && response.data) {
@@ -550,29 +573,29 @@ Page({
         newDreamPosts[postIndex] = {
           ...post,
           isFavorited: response.data.isFavorited,
-          favoriteCount: response.data.favoriteCount
+          favoriteCount: response.data.favoriteCount,
         };
 
         this.setData({
-          dreamPosts: newDreamPosts
+          dreamPosts: newDreamPosts,
         });
 
         Toast({
-          type: 'success',
-          message: response.data.isFavorited ? '收藏成功' : '已取消收藏',
-          duration: 1500
+          type: "success",
+          message: response.data.isFavorited ? "收藏成功" : "已取消收藏",
+          duration: 1500,
         });
       } else {
         wx.showToast({
-          title: response?.message || '操作失败',
-          icon: 'error'
+          title: response?.message || "操作失败",
+          icon: "error",
         });
       }
     } catch (error) {
-      console.error('收藏操作失败:', error);
+      console.error("收藏操作失败:", error);
       wx.showToast({
         title: this.data.i18n.community.operationFailed,
-        icon: 'error'
+        icon: "error",
       });
     } finally {
       this.setData({ isProcessing: false });
@@ -584,9 +607,9 @@ Page({
    */
   onShareAppMessage() {
     return {
-      title: this.data.i18n.app.shareTitle,
-      path: '/pages/index/index',
-      imageUrl: '' // 可以设置分享图片
+      title: t("app.shareTitle"),
+      path: "/pages/index/index",
+      imageUrl: "", // 可以设置分享图片
     };
   },
 
@@ -595,8 +618,8 @@ Page({
    */
   onShareTimeline() {
     return {
-      title: this.data.i18n.app.timelineTitle,
-      imageUrl: '' // 可以设置分享图片
+      title: t("app.timelineTitle"),
+      imageUrl: "", // 可以设置分享图片
     };
-  }
+  },
 });

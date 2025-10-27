@@ -44,7 +44,8 @@
   "lazyCodeLoading": "requiredComponents",
   "usingComponents": {
     "van-icon": "@vant/weapp/icon/index",
-    "van-toast": "@vant/weapp/toast/index"
+    "van-toast": "@vant/weapp/toast/index",
+    "painter": "/components/painter/painter"
   },
   "networkTimeout": {
     "request": 10000,
