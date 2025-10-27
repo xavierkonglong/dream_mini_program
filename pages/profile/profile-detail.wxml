@@ -1,0 +1,48 @@
+<!--pages/profile/profile-detail.wxml-->
+<view class="container language-{{language}}">
+  <!-- 背景图片 -->
+  <image class="background-image" src="{{imageUrls.BACKGROUNDS.PERSON}}" mode="aspectFill"></image>
+  
+  <!-- 用户信息头部 -->
+  <view class="profile-header">
+    <image class="avatar" src="{{userInfo.userAvatar || imageUrls.DEFAULT_AVATAR}}" mode="aspectFill"></image>
+    <view class="user-info">
+      <text class="username">{{userInfo.userName || i18n.profileDetail.dreamExplorer}}</text>
+      <text class="join-date" wx:if="{{userInfo.createTime}}">{{i18n.profileDetail.joinTime}}{{userInfo.createTime}}</text>
+    </view>
+  </view>
+
+  <!-- 菜单列表 -->
+  <view class="menu-container">
+    <!-- 个人信息菜单 -->
+    <view class="menu-section">
+      <view class="menu-item" bindtap="onEditProfile">
+        <van-icon name="edit" size="44rpx" class="menu-icon" />
+        <text class="menu-text">{{i18n.profileDetail.editProfile}}</text>
+        <van-icon name="arrow" size="32rpx" class="menu-arrow" />
+      </view>
+    </view>
+
+    <!-- 其他菜单（已移除"关于我们"） -->
+    <view class="menu-section">
+      <view class="menu-item" bindtap="onHelp">
+        <van-icon name="question-o" size="44rpx" class="menu-icon" />
+        <text class="menu-text">{{i18n.profileDetail.helpFeedback}}</text>
+        <van-icon name="arrow" size="32rpx" class="menu-arrow" />
+      </view>
+      
+      <view class="menu-item" bindtap="onVersion">
+        <van-icon name="info-o" size="44rpx" class="menu-icon" />
+        <text class="menu-text">{{i18n.profileDetail.versionInfo}}</text>
+        <view class="menu-version">3.0</view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 退出登录按钮 -->
+  <view class="logout-section">
+    <button class="logout-btn" bindtap="onLogout">
+      <text class="logout-text">{{i18n.profileDetail.logout}}</text>
+    </button>
+  </view>
+</view>

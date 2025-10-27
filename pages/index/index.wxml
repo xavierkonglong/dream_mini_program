@@ -1,0 +1,105 @@
+<!--首页-->
+<view class="container language-{{language}}">
+  <!-- 背景图片 -->
+  <image class="background-image" src="{{imageUrls.BACKGROUNDS.INDEX}}" mode="aspectFill"></image>
+  
+  <!-- 语言切换按钮 -->
+  <view class="language-toggle" bindtap="onLanguageToggle">
+    <text class="language-text">{{language === 'zh' ? 'EN' : '中文'}}</text>
+  </view>
+  
+  <!-- 主内容区域 -->
+  <view class="main-content">
+    <!-- 提示区域 -->
+    <view class="hint-section">
+      <view class="hint-title">{{i18n.index.title}}</view>
+      <view class="hint-subtitle">{{i18n.index.subtitle}}</view>
+    </view>
+    
+    <!-- 输入区域 -->
+    <view class="input-section">
+      <view class="input-field glass-effect {{inputFocused ? 'focused' : ''}}">
+        <textarea 
+          class="dream-input"
+          placeholder="{{i18n.index.placeholder}}"
+          value="{{dreamDescription}}"
+          bindinput="onDreamInput"
+          bindfocus="onInputFocus"
+          bindblur="onInputBlur"
+          maxlength="1000"
+          show-confirm-bar="{{false}}"
+        ></textarea>
+        <view class="input-actions" wx:if="{{dreamDescription}}">
+          <view class="char-count">{{dreamDescription.length}}/1000</view>
+          <view class="clear-btn" bindtap="onClearInput">
+            <text class="clear-icon">×</text>
+          </view>
+        </view>
+      </view>
+    </view>
+    
+    <!-- 生成类型选择 -->
+    <view class="generation-type-section">
+      <view class="generation-type-title">{{i18n.index.generationType}}</view>
+      <radio-group class="generation-type-group" bindchange="onGenerationTypeChange">
+        <label class="generation-type-item {{generationType === 'image' ? 'active' : ''}}">
+          <radio value="image" checked="{{generationType === 'image'}}" color="#8B5CF6"/>
+          <text>{{i18n.index.textToImage}}</text>
+        </label>
+        <label class="generation-type-item {{generationType === 'video' ? 'active' : ''}}">
+          <radio value="video" checked="{{generationType === 'video'}}" color="#8B5CF6"/>
+          <text>{{i18n.index.textToVideo}}</text>
+        </label>
+      </radio-group>
+    </view>
+    
+    <!-- 分析按钮 -->
+    <view class="action-section">
+      <button 
+        class="analysis-button {{analyzing ? 'analyzing' : ''}}"
+        bindtap="onAnalyzeDream"
+        disabled="{{analyzing}}"
+      >
+        <text wx:if="{{!analyzing}}">{{i18n.index.analyze}}</text>
+        <text wx:else>{{i18n.index.analyzing}}</text>
+      </button>
+    </view>
+    
+    <!-- 进度条 -->
+    <view class="progress-section {{analyzing ? 'show' : ''}}">
+      <view class="progress-bar">
+        <view class="progress-fill" style="width: {{progress}}%"></view>
+      </view>
+      <view class="progress-text" wx:if="{{analyzing}}">{{progressText}}</view>
+    </view>
+    
+    <!-- 使用提示 -->
+    <view class="tips-section">
+      <view class="tips-title">{{i18n.index.tipsTitle}}</view>
+      <view class="tips-content">
+        <view class="tip-item" wx:for="{{i18n.index.tips}}" wx:key="index">{{item}}</view>
+      </view>
+      <view class="tips-disclaimer">{{i18n.index.disclaimer}}</view>
+    </view>
+  </view>
+  
+  <!-- 登录弹窗 -->
+  <login-modal 
+    show="{{showLoginModal}}"
+    title="{{i18n.loginModal && i18n.loginModal.title || '欢迎来到梦境世界'}}"
+    subtitle="{{i18n.loginModal && i18n.loginModal.subtitle || '请先登录以体验完整功能'}}"
+    bind:loginSuccess="onLoginSuccess"
+    bind:loginCancel="onLoginCancel"
+    bind:close="onCloseLoginModal"
+  />
+  
+  <!-- 个人信息设置弹窗 -->
+  <profile-setup-modal 
+    show="{{showProfileSetupModal}}"
+    bind:setupComplete="onProfileSetupComplete"
+    bind:close="onCloseProfileSetupModal"
+  />
+</view>
+
+<!-- 自定义tabBar -->
+<custom-tabbar />

@@ -1,0 +1,14 @@
+{
+  "usingComponents": {
+    "login-modal": "../../components/login-modal/login-modal",
+    "custom-tabbar": "../../components/custom-tabbar/custom-tabbar",
+    "van-icon": "@vant/weapp/icon/index"
+  },
+  "navigationBarTitleText": "梦境社区",
+  "navigationBarBackgroundColor": "#8B5CF6",
+  "navigationBarTextStyle": "white",
+  "enablePullDownRefresh": true,
+  "onReachBottomDistance": 100
+}
+
+

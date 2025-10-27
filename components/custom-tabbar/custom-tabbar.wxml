@@ -1,0 +1,18 @@
+<!--components/custom-tabbar/custom-tabbar.wxml-->
+<view class="custom-tabbar">
+  <view 
+    class="tab-item {{index === selected ? 'active' : ''}}" 
+    wx:for="{{list}}" 
+    wx:key="index"
+    data-index="{{index}}"
+    data-path="{{item.pagePath}}"
+    bindtap="switchTab"
+  >
+    <van-icon 
+      size="44rpx" 
+      name="{{index === selected ? item.selectedIcon : item.icon}}" 
+      class="tab-icon"
+    />
+    <text class="tab-text">{{item.text}}</text>
+  </view>
+</view>

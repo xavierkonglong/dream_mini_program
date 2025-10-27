@@ -1,0 +1,88 @@
+<!--帖子详情页-->
+<view class="container language-{{language}}">
+  <!-- 帖子内容 -->
+  <view class="post-content" wx:if="{{postData}}">
+    <!-- 梦境内容 -->
+    <view class="dream-content-section">
+      <view class="section-title">{{i18n.postDetail.dreamContent}}</view>
+      <view class="cloud-card dream-content-card">
+        <text class="dream-text">{{postData.dreamDescription}}</text>
+      </view>
+    </view>
+
+    <!-- 关键词 -->
+    <view class="keywords-section" wx:if="{{postData.keywords && postData.keywords.length > 0}}">
+      <view class="section-title">{{i18n.postDetail.keywords}}</view>
+      <view class="keywords-container">
+        <view class="keyword-tag" wx:for="{{postData.keywords}}" wx:key="index">
+          {{item}}
+        </view>
+      </view>
+    </view>
+
+    <!-- 梦境解析 -->
+    <view class="analysis-section" wx:if="{{postData && postData.interpretation}}">
+      <view class="section-title">{{i18n.postDetail.analysis}}</view>
+      <view class="cloud-card analysis-card">
+        <view class="analysis-content">
+          <!-- 直接显示分段内容 -->
+          <view class="analysis-paragraph" wx:for="{{postData.interpretationParagraphs}}" wx:key="index">
+            {{item}}
+          </view>
+        </view>
+        <view class="ai-disclaimer">
+          <text class="disclaimer-text">{{i18n.postDetail.aiDisclaimer}}</text>
+        </view>
+      </view>
+    </view>
+    
+
+    <!-- AI梦境视频 -->
+    <view class="video-section" wx:if="{{postData.videoUrl}}">
+      <view class="section-title">{{i18n.postDetail.aiVideo}}</view>
+      <view class="video-container">
+        <video class="dream-video" src="{{postData.videoUrl}}" controls="{{true}}" show-center-play-btn="{{true}}" show-play-btn="{{true}}" muted="{{false}}" loop="{{false}}" autoplay="{{false}}" poster="{{postData.imageUrl || ''}}"></video>
+      </view>
+      <view class="video-description" wx:if="{{postData.videoPrompt}}">
+        <text class="description-text">{{postData.videoPrompt}}</text>
+      </view>
+    </view>
+
+    <!-- AI梦境图像 -->
+    <view class="image-section" wx:elif="{{postData.imageUrl}}">
+      <view class="section-title">{{i18n.postDetail.aiImage}}</view>
+      <view class="image-container">
+        <image class="dream-image" src="{{postData.imageUrl}}" mode="aspectFill" bindtap="onPreviewImage" />
+      </view>
+      <view class="image-description" wx:if="{{postData.imagePrompt}}">
+        <text class="description-text">{{postData.imagePrompt}}</text>
+      </view>
+    </view>
+
+    <!-- 互动按钮区域 -->
+    <view class="action-buttons">
+      <view class="action-btn like-btn {{postData.isLiked ? 'liked' : ''}}" bindtap="onToggleLike">
+        <van-icon size="32rpx" name="{{postData.isLiked ? 'like' : 'like-o'}}" class="action-icon {{postData.isLiked ? 'liked' : ''}}" />
+        <text class="action-text">{{postData.isLiked ? i18n.postDetail.liked : i18n.postDetail.like}}</text>
+      </view>
+
+      <view class="action-btn favorite-btn {{postData.isFavorited ? 'favorited' : ''}}" bindtap="onToggleFavorite">
+        <van-icon size="32rpx" name="{{postData.isFavorited ? 'star' : 'star-o'}}" class="action-icon {{postData.isFavorited ? 'favorited' : ''}}" />
+        <text class="action-text">{{postData.isFavorited ? i18n.postDetail.favorited : i18n.postDetail.favorite}}</text>
+      </view>
+
+      <!-- 已按需求移除分享按钮 -->
+    </view>
+  </view>
+
+  <!-- 无数据状态 -->
+  <view class="empty-state" wx:else>
+    <view class="empty-content">
+      <text class="empty-icon">🌙</text>
+      <text class="empty-text">{{i18n.postDetail.postNotFound}}</text>
+    </view>
+  </view>
+
+  <!-- 登录弹窗 -->
+  <login-modal show="{{showLoginModal}}" title="{{i18n.postDetail.loginRequired}}" subtitle="{{i18n.postDetail.loginSubtitle}}" bind:loginSuccess="onLoginSuccess" bind:close="onCloseLoginModal" />
+</view>

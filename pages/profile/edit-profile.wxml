@@ -1,0 +1,73 @@
+<!--pages/profile/edit-profile.wxml-->
+<view class="container language-{{language}}">
+  <!-- 背景图片 -->
+  <image class="background-image" src="{{imageUrls.BACKGROUNDS.PROFILE}}" mode="aspectFill"></image>
+  
+
+  <!-- 主内容区域 -->
+  <view class="main-content">
+    <!-- 头像区域 -->
+    <view class="avatar-section">
+      <view class="avatar-container" bindtap="onAvatarTap">
+        <image 
+          class="avatar-image" 
+          src="{{userInfo.avatarUrl || imageUrls.DEFAULT_AVATAR}}" 
+          mode="aspectFill"
+        ></image>
+        <view class="avatar-overlay {{uploading ? 'uploading' : ''}}">
+          <text class="avatar-icon">{{uploading ? '⏳' : '📷'}}</text>
+          <text class="avatar-text">{{uploading ? i18n.editProfile.uploading : i18n.editProfile.clickToChange}}</text>
+        </view>
+      </view>
+    </view>
+
+    <!-- 昵称输入框 -->
+    <view class="input-section">
+      <view class="cloud-input">
+        <text class="input-label">{{i18n.editProfile.nickname}}</text>
+        <input 
+          class="input-field"
+          placeholder="{{i18n.editProfile.nicknamePlaceholder}}"
+          value="{{userInfo.nickName}}"
+          bindinput="onNickNameInput"
+          maxlength="20"
+        />
+        <view class="input-icon">
+          <van-icon name="contact" size="32rpx" class="icon-text" />
+        </view>
+      </view>
+    </view>
+
+    <!-- 手机号输入框 -->
+    <view class="input-section">
+      <view class="cloud-input" catchtap="preventNavigation">
+        <text class="input-label">{{i18n.editProfile.phone}}</text>
+        <input 
+          class="input-field"
+          placeholder="{{i18n.editProfile.phonePlaceholder}}"
+          value="{{userInfo.phone}}"
+          bindinput="onPhoneInput"
+          type="number"
+          maxlength="11"
+          catchtap="preventNavigation"
+        />
+        <view class="input-icon">
+          <van-icon name="phone" size="32rpx" class="icon-text" />
+        </view>
+      </view>
+    </view>
+
+    <!-- 更新按钮 -->
+    <view class="action-section">
+      <button 
+        class="update-button {{updating ? 'updating' : ''}}"
+        bindtap="onUpdateProfile"
+        disabled="{{updating}}"
+      >
+        <text wx:if="{{!updating}}">{{i18n.editProfile.save}}</text>
+        <text wx:else>{{i18n.editProfile.saving}}</text>
+      </button>
+    </view>
+  </view>
+</view>
+

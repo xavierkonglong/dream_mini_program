@@ -1,0 +1,60 @@
+{
+  "pages": [
+    "pages/index/index",
+    "pages/community/community",
+    "pages/profile/profile",
+    "pages/profile/profile-detail",
+    "pages/profile/edit-profile",
+    "pages/result/result",
+    "pages/result/post-detail",
+    "pages/diary/diary"
+  ],
+  "window": {
+    "navigationBarTitleText": "梦境解析",
+    "navigationBarBackgroundColor": "#8B5CF6",
+    "navigationBarTextStyle": "white",
+    "backgroundColor": "#8B5CF6",
+    "backgroundTextStyle": "light",
+    "backgroundColorTop": "#8B5CF6",
+    "backgroundColorBottom": "#8B5CF6",
+    "pageOrientation": "portrait",
+    "restartStrategy": "homePageAndLatestPage"
+  },
+  "tabBar": {
+    "custom": true,
+    "color": "#7A7E83",
+    "selectedColor": "#8B5CF6",
+    "backgroundColor": "#ffffff",
+    "borderStyle": "black",
+    "list": [
+      {
+        "pagePath": "pages/index/index",
+        "text": "首页"
+      },
+      {
+        "pagePath": "pages/community/community",
+        "text": "社区"
+      },
+      {
+        "pagePath": "pages/profile/profile",
+        "text": "我的"
+      }
+    ]
+  },
+  "lazyCodeLoading": "requiredComponents",
+  "usingComponents": {
+    "van-icon": "@vant/weapp/icon/index",
+    "van-toast": "@vant/weapp/toast/index"
+  },
+  "networkTimeout": {
+    "request": 10000,
+    "downloadFile": 20000
+  },
+  "permission": {
+    "scope.userLocation": {
+      "desc": "你的位置信息将用于小程序位置接口的效果展示"
+    }
+  },
+  "requiredBackgroundModes": [],
+  "sitemapLocation": "sitemap.json"
+}

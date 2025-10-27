@@ -1,0 +1,320 @@
+/* 帖子详情页样式 - 梦幻水彩风格 */
+@import "../../styles/variables.wxss";
+@import "../../styles/mixins.wxss";
+
+.container {
+  min-height: 100vh;
+  max-height: 100vh;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  background-image: url('https://dulele.org.cn/images/assest/dreamAnalysisResult.png');
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+}
+
+.background-image {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 1;
+}
+
+
+/* 帖子内容 */
+.post-content {
+  flex: 1;
+  overflow: auto;
+  padding: 20rpx 40rpx 120rpx;
+}
+
+
+/* 通用区域样式 */
+.dream-content-section,
+.keywords-section,
+.analysis-section,
+.image-section,
+.video-section {
+  margin-bottom: 40rpx;
+}
+
+.section-title {
+  font-size: 32rpx;
+  font-weight: 600;
+  color: #000000;
+  margin-bottom: 20rpx;
+  text-shadow: 0 1rpx 2rpx rgba(0, 0, 0, 0.1);
+}
+
+/* 云朵形状卡片 */
+.cloud-card {
+  background: rgba(255, 255, 255, 0.95);
+  border-radius: 40rpx;
+  padding: 32rpx;
+  box-shadow: 0 8rpx 32rpx rgba(139, 92, 246, 0.15);
+  backdrop-filter: blur(10rpx);
+  border: 2rpx solid rgba(255, 255, 255, 0.3);
+  position: relative;
+  overflow: hidden;
+}
+
+/* 梦境内容卡片 */
+.dream-content-card {
+  min-height: 120rpx;
+}
+
+.dream-text {
+  font-size: 28rpx;
+  line-height: 1.6;
+  color: #333;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
+}
+
+/* 关键词标签 */
+.keywords-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16rpx;
+}
+
+.keyword-tag {
+  background: rgba(255, 255, 255, 0.9);
+  border: 2rpx solid #8B5CF6;
+  border-radius: 30rpx;
+  padding: 16rpx 24rpx;
+  font-size: 24rpx;
+  color: #8B5CF6;
+  font-weight: 500;
+  backdrop-filter: blur(5rpx);
+  transition: all 0.3s ease;
+}
+
+.keyword-tag:active {
+  background: #8B5CF6;
+  color: white;
+  transform: scale(0.95);
+}
+
+/* 解析卡片 */
+.analysis-card {
+  min-height: 120rpx;
+}
+
+/* 解析内容容器 */
+.analysis-content {
+  display: flex;
+  flex-direction: column;
+  gap: 24rpx;
+}
+
+.analysis-paragraph {
+  font-size: 28rpx;
+  line-height: 1.6;
+  color: #333;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
+}
+
+/* AI免责声明 */
+.ai-disclaimer {
+  margin-top: 20rpx;
+  padding-top: 16rpx;
+  border-top: 1rpx solid rgba(139, 92, 246, 0.1);
+  text-align: center;
+}
+
+.disclaimer-text {
+  font-size: 22rpx;
+  color: #999;
+  font-style: italic;
+  opacity: 0.8;
+}
+
+/* AI图像区域 */
+.image-container {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 1/1;
+  /* 正方形比例 */
+  border-radius: 24rpx;
+  overflow: hidden;
+  /* 确保图片不会超出圆角边界 */
+  box-shadow: 0 8rpx 24rpx rgba(0, 0, 0, 0.1);
+}
+
+.dream-image {
+  width: 100%;
+  height: 100%;
+  /* 100%填充容器 */
+  border-radius: 24rpx;
+  transition: all 0.3s ease;
+  object-fit: cover;
+  /* 保持比例，裁剪多余部分 */
+}
+
+.dream-image:active {
+  transform: scale(0.98);
+}
+
+.image-description {
+  margin-top: 16rpx;
+  padding: 20rpx;
+  background: rgba(255, 255, 255, 0.9);
+  border-radius: 16rpx;
+  backdrop-filter: blur(5rpx);
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.description-text {
+  font-size: 24rpx;
+  line-height: 1.5;
+  color: #666;
+  font-style: italic;
+}
+
+/* AI视频区域 */
+.video-container {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 16/9;
+  /* 16:9比例 */
+  border-radius: 24rpx;
+  overflow: hidden;
+  /* 确保视频不会超出圆角边界 */
+  box-shadow: 0 8rpx 24rpx rgba(0, 0, 0, 0.1);
+}
+
+.dream-video {
+  width: 100%;
+  height: 100%;
+  /* 100%填充容器 */
+  border-radius: 24rpx;
+  transition: all 0.3s ease;
+}
+
+.video-description {
+  margin-top: 16rpx;
+  padding: 20rpx;
+  background: rgba(255, 255, 255, 0.9);
+  border-radius: 16rpx;
+  backdrop-filter: blur(5rpx);
+  width: 100%;
+  box-sizing: border-box;
+}
+
+/* 互动按钮区域 */
+.action-buttons {
+  display: flex;
+  justify-content: center;
+  gap: 20rpx;
+  margin-top: 40rpx;
+  padding: 20rpx 0;
+  flex-wrap: wrap;
+}
+
+.action-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20rpx 32rpx;
+  border-radius: 40rpx;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(10rpx);
+  box-shadow: 0 4rpx 12rpx rgba(0, 0, 0, 0.05);
+  border: none;
+  transition: all 0.3s ease;
+  min-width: 160rpx;
+  gap: 12rpx;
+}
+
+.action-btn:active {
+  transform: scale(0.96);
+  box-shadow: 0 2rpx 6rpx rgba(0, 0, 0, 0.05);
+}
+
+.action-icon {
+  font-size: 48rpx !important;
+  color: #969799;
+  transition: all 0.3s ease;
+}
+
+.action-text {
+  font-size: 28rpx;
+  color: #969799;
+  font-weight: 500;
+  transition: all 0.3s ease;
+}
+
+/* 点赞按钮状态 */
+.like-btn.liked {
+  background: #fff4f4;
+  box-shadow: 0 4rpx 12rpx rgba(255, 68, 68, 0.1);
+}
+
+.like-btn.liked .action-icon {
+  color: #ff4444 !important;
+}
+
+.like-btn.liked .action-text {
+  color: #ff4444;
+}
+
+/* 收藏按钮状态 */
+.favorite-btn.favorited {
+  background: #fff8e6;
+  box-shadow: 0 4rpx 12rpx rgba(255, 210, 30, 0.1);
+}
+
+.favorite-btn.favorited .action-icon {
+  color: #ffd21e !important;
+}
+
+.favorite-btn.favorited .action-text {
+  color: #ffd21e;
+}
+
+/* 分享按钮样式 */
+.share-btn {
+  background: rgba(76, 175, 80, 0.1);
+  border-color: rgba(76, 175, 80, 0.3);
+}
+
+.share-btn:active {
+  background: rgba(76, 175, 80, 0.2);
+  border-color: rgba(76, 175, 80, 0.5);
+}
+
+.share-btn .action-text {
+  color: #4caf50;
+  font-weight: 500;
+}
+
+/* 空状态 */
+.empty-state {
+  position: relative;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 60vh;
+  padding: 0 40rpx;
+}
+
+.empty-content {
+  text-align: center;
+}
+
+.empty-icon {
+  font-size: 80rpx;
+  display: block;
+  margin-bottom: 20rpx;
+}
+
+.empty-text {
+  font-size: 32rpx;
+  color: rgba(255, 255, 255, 0.8);
+  text-shadow: 0 2rpx 4rpx rgba(0, 0, 0, 0.1);
+}

@@ -1,0 +1,45 @@
+<!--登录弹窗组件-->
+<view class="login-modal language-{{language}}" wx:if="{{show}}">
+  <!-- 遮罩层 -->
+  <view class="modal-mask" bindtap="onMaskTap"></view>
+  
+  <!-- 弹窗内容 -->
+  <view class="modal-content">
+    <!-- 背景装饰 -->
+    <view class="modal-bg">
+      <image class="bg-image" src="{{imageUrls.BACKGROUNDS.DREAM_ANALYSIS_RESULT}}" mode="aspectFill"></image>
+    </view>
+    
+    <!-- 弹窗主体 -->
+    <view class="modal-body">
+      <!-- 标题 -->
+      <view class="modal-title">
+        <text class="title-text">{{title || i18n.loginModal.title}}</text>
+        <text class="title-subtitle">{{subtitle || i18n.loginModal.subtitle}}</text>
+      </view>
+      
+      <!-- 登录按钮 -->
+      <view class="login-actions">
+        <button 
+          class="login-btn" 
+          bindtap="onLogin"
+          disabled="{{isLogging}}"
+        >
+          <image class="btn-icon" src="{{imageUrls.ICONS.HOME}}" mode="aspectFit"></image>
+          <text class="btn-text">{{isLogging ? loggingText : loginButtonText}}</text>
+        </button>
+        
+        <button class="cancel-btn" bindtap="onCancel">
+          <text class="cancel-text">{{cancelText}}</text>
+        </button>
+      </view>
+      
+      <!-- 提示信息 -->
+      <view class="login-tips">
+        <text class="tips-text">{{tipsText}}</text>
+      </view>
+    </view>
+  </view>
+</view>
+
+

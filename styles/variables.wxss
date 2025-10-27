@@ -1,0 +1,158 @@
+/* 样式变量定义 */
+
+/* 主题色彩 */
+:root {
+  /* 主色调 - 梦境紫色系 */
+  --primary-color: #8B5CF6;
+  --primary-light: #A78BFA;
+  --primary-lighter: #C4B5FD;
+  --primary-dark: #7C3AED;
+  --primary-darker: #6D28D9;
+  
+  /* 辅助色 */
+  --secondary-color: #F59E0B;
+  --accent-color: #10B981;
+  --warning-color: #F59E0B;
+  --error-color: #EF4444;
+  --success-color: #10B981;
+  --info-color: #3B82F6;
+  
+  /* 中性色 */
+  --text-primary: #1F2937;
+  --text-secondary: #6B7280;
+  --text-tertiary: #9CA3AF;
+  --text-disabled: #D1D5DB;
+  --text-inverse: #FFFFFF;
+  
+  /* 背景色 */
+  --bg-primary: #FFFFFF;
+  --bg-secondary: #F9FAFB;
+  --bg-tertiary: #F3F4F6;
+  --bg-disabled: #F9FAFB;
+  --bg-overlay: rgba(0, 0, 0, 0.5);
+  
+  /* 边框色 */
+  --border-primary: #E5E7EB;
+  --border-secondary: #D1D5DB;
+  --border-focus: var(--primary-color);
+  --border-error: var(--error-color);
+  
+  /* 阴影 */
+  --shadow-sm: 0 1rpx 2rpx rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 4rpx 6rpx rgba(0, 0, 0, 0.1);
+  --shadow-lg: 0 10rpx 15rpx rgba(0, 0, 0, 0.1);
+  --shadow-xl: 0 20rpx 25rpx rgba(0, 0, 0, 0.1);
+  --shadow-2xl: 0 25rpx 50rpx rgba(0, 0, 0, 0.25);
+  
+  /* 圆角 */
+  --radius-sm: 4rpx;
+  --radius-md: 8rpx;
+  --radius-lg: 12rpx;
+  --radius-xl: 16rpx;
+  --radius-2xl: 24rpx;
+  --radius-full: 9999rpx;
+  
+  /* 间距 */
+  --spacing-xs: 8rpx;
+  --spacing-sm: 16rpx;
+  --spacing-md: 24rpx;
+  --spacing-lg: 32rpx;
+  --spacing-xl: 48rpx;
+  --spacing-2xl: 64rpx;
+  
+  /* 字体大小 */
+  --font-xs: 20rpx;
+  --font-sm: 24rpx;
+  --font-md: 28rpx;
+  --font-lg: 32rpx;
+  --font-xl: 36rpx;
+  --font-2xl: 40rpx;
+  --font-3xl: 48rpx;
+  --font-4xl: 56rpx;
+  
+  /* 字体粗细 */
+  --font-thin: 100;
+  --font-light: 300;
+  --font-normal: 400;
+  --font-medium: 500;
+  --font-semibold: 600;
+  --font-bold: 700;
+  --font-extrabold: 800;
+  --font-black: 900;
+  
+  /* 行高 */
+  --leading-tight: 1.25;
+  --leading-normal: 1.5;
+  --leading-relaxed: 1.75;
+  
+  /* 动画时长 */
+  --duration-fast: 150ms;
+  --duration-normal: 300ms;
+  --duration-slow: 500ms;
+  
+  /* 动画缓动 */
+  --ease-in: cubic-bezier(0.4, 0, 1, 1);
+  --ease-out: cubic-bezier(0, 0, 0.2, 1);
+  --ease-in-out: cubic-bezier(0.4, 0, 0.2, 1);
+  
+  /* Z-index层级 */
+  --z-dropdown: 1000;
+  --z-sticky: 1020;
+  --z-fixed: 1030;
+  --z-modal-backdrop: 1040;
+  --z-modal: 1050;
+  --z-popover: 1060;
+  --z-tooltip: 1070;
+  --z-toast: 1080;
+}
+
+/* 暗色主题变量 */
+[data-theme="dark"] {
+  --text-primary: #F9FAFB;
+  --text-secondary: #D1D5DB;
+  --text-tertiary: #9CA3AF;
+  --text-disabled: #6B7280;
+  
+  --bg-primary: #1F2937;
+  --bg-secondary: #374151;
+  --bg-tertiary: #4B5563;
+  --bg-disabled: #374151;
+  
+  --border-primary: #4B5563;
+  --border-secondary: #6B7280;
+}
+
+/* 梦境主题特殊变量 */
+.dream-theme {
+  --primary-gradient: linear-gradient(135deg, #8B5CF6 0%, #A78BFA 30%, #C4B5FD 60%, #E0E7FF 100%);
+  --dream-bg: linear-gradient(180deg, #8B5CF6 0%, #A78BFA 30%, #C4B5FD 60%, #E0E7FF 100%);
+  --cloud-color: rgba(255, 255, 255, 0.3);
+  --star-color: rgba(255, 255, 255, 0.8);
+}
+
+/* 水彩云朵颜色 */
+.cloud-purple {
+  background: linear-gradient(135deg, rgba(139, 92, 246, 0.3), rgba(167, 139, 250, 0.2));
+}
+
+.cloud-blue {
+  background: linear-gradient(135deg, rgba(196, 181, 253, 0.3), rgba(224, 231, 255, 0.2));
+}
+
+.cloud-white {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.4), rgba(255, 255, 255, 0.1));
+}
+
+/* 毛玻璃效果 */
+.glass-effect {
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(20rpx);
+  border: 2rpx solid rgba(255, 255, 255, 0.3);
+  box-shadow: 0 8rpx 32rpx rgba(0, 0, 0, 0.1);
+}
+
+.glass-effect-light {
+  background: rgba(255, 255, 255, 0.15);
+  backdrop-filter: blur(15rpx);
+  border: 2rpx solid rgba(255, 255, 255, 0.3);
+}

@@ -1,0 +1,272 @@
+<!--pages/profile/profile.wxml-->
+<view class="container language-{{language}}">
+  <!-- 背景图片 -->
+  <!-- <image class="background-image" src="{{imageUrls.BACKGROUNDS.PERSON}}" mode="aspectFill"></image> -->
+
+  <!-- 用户头像区域 -->
+  <view class="profile-section">
+    <!-- 已登录状态 -->
+    <view wx:if="{{isLoggedIn}}" class="user-info-section" bindtap="onAvatarTap">
+      <image class="avatar" src="{{userInfo.userAvatar || imageUrls.DEFAULT_AVATAR}}" mode="aspectFill"></image>
+      <view class="user-details">
+        <text class="username">{{userInfo.userName || i18n.profile.dreamExplorer}}</text>
+        <text class="join-date" wx:if="{{userInfo.createTime}}">{{i18n.profile.joinTime}}{{userInfo.createTime}}</text>
+      </view>
+    </view>
+
+    <!-- 未登录状态 -->
+    <view wx:else class="login-section">
+      <image class="avatar" src="{{imageUrls.DEFAULT_AVATAR}}" mode="aspectFill"></image>
+      <view class="login-actions">
+        <text class="login-tips">{{i18n.profile.loginTips}}</text>
+        <button class="login-btn" bindtap="onLogin">
+          <text class="btn-text">{{i18n.profile.loginNow}}</text>
+        </button>
+      </view>
+    </view>
+  </view>
+
+  <!-- 标签导航 -->
+  <view class="tab-navigation">
+    <view class="tab-item {{activeTab === 'diary' ? 'active' : ''}}" data-tab="diary" bindtap="onTabChange">
+      <text class="tab-text">{{i18n.profile.myDreamDiary}}</text>
+    </view>
+    <view class="tab-item {{activeTab === 'collection' ? 'active' : ''}}" data-tab="collection" bindtap="onTabChange">
+      <text class="tab-text">{{i18n.profile.myCollections}}</text>
+    </view>
+    <view class="tab-item {{activeTab === 'likes' ? 'active' : ''}}" data-tab="likes" bindtap="onTabChange">
+      <text class="tab-text">{{i18n.profile.myLikes}}</text>
+    </view>
+  </view>
+
+  <!-- 内容区域 -->
+  <view class="content-area">
+    <!-- 我的梦境日记 -->
+    <view class="tab-content" wx:if="{{activeTab === 'diary'}}">
+      <!-- 已登录状态 -->
+      <view wx:if="{{isLoggedIn}}">
+        <!-- 梦境日记列表 -->
+        <view class="timeline-container" wx:if="{{dreamDiaryList.length > 0}}">
+          <view class="timeline-item" wx:for="{{dreamDiaryList}}" wx:key="id" data-id="{{item.id}}" bindtap="onViewDream">
+            <!-- 时间节点 -->
+            <view class="timeline-node">
+              <view class="node-circle"></view>
+              <view class="node-line" wx:if="{{index < dreamDiaryList.length - 1}}"></view>
+            </view>
+
+            <!-- 内容区域 -->
+            <view class="timeline-content">
+              <!-- 时间标记 -->
+              <view class="timeline-time">
+                <text class="time-text">{{item.date}}</text>
+              </view>
+
+              <!-- 内容卡片 -->
+              <view class="dream-card">
+                <view class="dream-header">
+                  <text class="dream-title">{{item.title}}</text>
+                </view>
+
+                <!-- 视频卡片 -->
+                <view class="video-card" wx:if="{{item.videoUrl}}">
+                  <video class="dream-video" src="{{item.videoUrl}}" controls="{{false}}" show-center-play-btn="{{false}}" show-play-btn="{{false}}" muted="{{true}}" loop="{{true}}" autoplay="{{false}}" poster="{{item.imageUrl || ''}}"></video>
+                  <view class="video-overlay">
+                    <van-icon name="play" size="60rpx" class="play-icon" />
+                  </view>
+                </view>
+
+                <!-- 图片卡片 -->
+                <image class="dream-image" src="{{item.imageUrl}}" mode="aspectFill" wx:elif="{{item.imageUrl}}"></image>
+              </view>
+            </view>
+          </view>
+        </view>
+
+        <!-- 梦境日记空状态 -->
+        <view class="empty-state" wx:if="{{dreamDiaryList.length === 0}}">
+          <view class="empty-content">
+            <text class="empty-icon">🌙</text>
+            <text class="empty-title">{{i18n.profile.noDreamDiary}}</text>
+            <text class="empty-desc">{{i18n.profile.noDreamDiaryDesc}}</text>
+            <button class="empty-action-btn" bindtap="onGoToDiary">
+              <text class="btn-text">{{i18n.profile.goToDiary}}</text>
+            </button>
+          </view>
+        </view>
+      </view>
+
+      <!-- 未登录状态 -->
+      <view wx:else class="login-prompt">
+        <view class="prompt-content">
+          <text class="prompt-icon">🔒</text>
+          <text class="prompt-title">{{i18n.profile.needLogin}}</text>
+          <text class="prompt-desc">{{i18n.profile.loginToViewDiary}}</text>
+          <button class="prompt-login-btn" bindtap="onLogin">
+            <text class="btn-text">{{i18n.profile.loginNow}}</text>
+          </button>
+        </view>
+      </view>
+    </view>
+
+    <!-- 我的收藏 -->
+    <view class="tab-content" wx:if="{{activeTab === 'collection'}}">
+      <!-- 已登录状态 -->
+      <view wx:if="{{isLoggedIn}}">
+        <view class="dream-list">
+          <view class="dream-item" wx:for="{{collectionList}}" wx:key="id" data-id="{{item.id}}" bindtap="onViewCollection">
+            <!-- 视频卡片 -->
+            <view class="video-card" wx:if="{{item.videoUrl && item.videoUrl !== ''}}">
+              <video class="dream-video" src="{{item.videoUrl}}" controls="{{false}}" show-center-play-btn="{{false}}" show-play-btn="{{false}}" muted="{{true}}" loop="{{true}}" autoplay="{{false}}" poster="{{item.imageUrl || ''}}"></video>
+              <view class="video-overlay">
+                <van-icon name="play" size="60rpx" class="play-icon" />
+              </view>
+            </view>
+
+            <!-- 梦境图片 -->
+            <image class="dream-image" src="{{item.imageUrl}}" mode="aspectFill" wx:elif="{{item.imageUrl && item.imageUrl !== ''}}"></image>
+
+            <!-- 梦境内容 -->
+            <view class="dream-content">
+              <text class="dream-text">{{item.dreamDescription}}</text>
+
+              <!-- 关键词标签 -->
+              <view class="keywords-section" wx:if="{{item.keywords && item.keywords.length > 0}}">
+                <view class="keywords">
+                  <text class="keyword-tag" wx:for="{{item.keywords}}" wx:key="*this" wx:for-item="keyword">{{keyword}}</text>
+                </view>
+              </view>
+            </view>
+
+            <!-- 操作按钮和统计信息 -->
+            <view class="actions">
+              <view class="stats">
+                <text class="create-time">{{item.createdAt}}</text>
+              </view>
+
+              <view class="action-buttons">
+                <view class="action-btn like-btn" data-post-id="{{item.postId}}" bindtap="onLike" catchtap="true">
+                  <van-icon size="32rpx" name="like-o" class="action-icon" />
+                  <text class="action-text">{{item.likeCount}}</text>
+                </view>
+
+                <view class="action-btn favorite-btn" data-post-id="{{item.postId}}" bindtap="onFavorite" catchtap="true">
+                  <van-icon size="32rpx" name="star-o" class="action-icon" />
+                  <text class="action-text">{{item.favoriteCount}}</text>
+                </view>
+              </view>
+            </view>
+          </view>
+        </view>
+
+        <!-- 空状态 -->
+        <view class="empty-state" wx:if="{{collectionList.length === 0}}">
+          <view class="empty-content">
+            <text class="empty-icon">⭐</text>
+            <text class="empty-title">{{i18n.profile.noCollections}}</text>
+            <text class="empty-desc">{{i18n.profile.noCollectionsDesc}}</text>
+            <button class="empty-action-btn" bindtap="onGoToCommunity">
+              <text class="btn-text">{{i18n.profile.goToCommunity}}</text>
+            </button>
+          </view>
+        </view>
+      </view>
+
+      <!-- 未登录状态 -->
+      <view wx:else class="login-prompt">
+        <view class="prompt-content">
+          <text class="prompt-icon">🔒</text>
+          <text class="prompt-title">{{i18n.profile.needLogin}}</text>
+          <text class="prompt-desc">{{i18n.profile.loginToViewCollections}}</text>
+          <button class="prompt-login-btn" bindtap="onLogin">
+            <text class="btn-text">{{i18n.profile.loginNow}}</text>
+          </button>
+        </view>
+      </view>
+    </view>
+
+    <!-- 我的点赞 -->
+    <view class="tab-content" wx:if="{{activeTab === 'likes'}}">
+      <!-- 已登录状态 -->
+      <view wx:if="{{isLoggedIn}}">
+        <view class="dream-list">
+          <view class="dream-item" wx:for="{{likesList}}" wx:key="id" data-id="{{item.id}}" bindtap="onViewLike">
+            <!-- 视频卡片 -->
+            <view class="video-card" wx:if="{{item.videoUrl && item.videoUrl !== ''}}">
+              <video class="dream-video" src="{{item.videoUrl}}" controls="{{false}}" show-center-play-btn="{{false}}" show-play-btn="{{false}}" muted="{{true}}" loop="{{true}}" autoplay="{{false}}" poster="{{item.imageUrl || ''}}"></video>
+              <view class="video-overlay">
+                <van-icon name="play" size="60rpx" class="play-icon" />
+              </view>
+            </view>
+
+            <!-- 梦境图片 -->
+            <image class="dream-image" src="{{item.imageUrl}}" mode="aspectFill" wx:elif="{{item.imageUrl && item.imageUrl !== ''}}"></image>
+
+            <!-- 梦境内容 -->
+            <view class="dream-content">
+              <text class="dream-text">{{item.dreamDescription}}</text>
+
+              <!-- 关键词标签 -->
+              <view class="keywords-section" wx:if="{{item.keywords && item.keywords.length > 0}}">
+                <view class="keywords">
+                  <text class="keyword-tag" wx:for="{{item.keywords}}" wx:key="*this" wx:for-item="keyword">{{keyword}}</text>
+                </view>
+              </view>
+            </view>
+
+            <!-- 操作按钮和统计信息 -->
+            <view class="actions">
+              <view class="stats">
+                <text class="create-time">{{item.createdAt}}</text>
+              </view>
+
+              <view class="action-buttons">
+                <view class="action-btn like-btn" data-post-id="{{item.postId}}" bindtap="onLike" catchtap="true">
+                  <van-icon size="32rpx" name="like-o" class="action-icon" />
+                  <text class="action-text">{{item.likeCount}}</text>
+                </view>
+
+                <view class="action-btn favorite-btn" data-post-id="{{item.postId}}" bindtap="onFavorite" catchtap="true">
+                  <van-icon size="32rpx" name="star-o" class="action-icon" />
+                  <text class="action-text">{{item.favoriteCount}}</text>
+                </view>
+              </view>
+            </view>
+          </view>
+        </view>
+
+        <!-- 空状态 -->
+        <view class="empty-state" wx:if="{{likesList.length === 0}}">
+          <view class="empty-content">
+            <text class="empty-icon">❤️</text>
+            <text class="empty-title">{{i18n.profile.noLikes}}</text>
+            <text class="empty-desc">{{i18n.profile.noLikesDesc}}</text>
+            <button class="empty-action-btn" bindtap="onGoToCommunity">
+              <text class="btn-text">{{i18n.profile.goToCommunity}}</text>
+            </button>
+          </view>
+        </view>
+      </view>
+
+      <!-- 未登录状态 -->
+      <view wx:else class="login-prompt">
+        <view class="prompt-content">
+          <text class="prompt-icon">🔒</text>
+          <text class="prompt-title">{{i18n.profile.needLogin}}</text>
+          <text class="prompt-desc">{{i18n.profile.loginToViewLikes}}</text>
+          <button class="prompt-login-btn" bindtap="onLogin">
+            <text class="btn-text">{{i18n.profile.loginNow}}</text>
+          </button>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 登录弹窗 -->
+  <login-modal show="{{showLoginModal}}" title="{{i18n.profile.welcomeTitle}}" subtitle="{{i18n.profile.welcomeSubtitle}}" bind:loginSuccess="onLoginSuccess" bind:loginCancel="onLoginCancel" bind:close="onCloseLoginModal"></login-modal>
+
+  <!-- 个人信息设置弹窗 -->
+  <profile-setup-modal show="{{showProfileSetupModal}}" bind:setupComplete="onProfileSetupComplete" bind:close="onCloseProfileSetupModal" />
+</view>
+
+<!-- 自定义tabBar -->
+<custom-tabbar />

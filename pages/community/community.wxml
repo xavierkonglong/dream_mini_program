@@ -1,0 +1,90 @@
+<!--pages/community/community.wxml-->
+<view class="container language-{{language}}">
+  <!-- 页面标题 -->
+  <view class="header">
+    <text class="subtitle">{{i18n.community.subtitle}}</text>
+  </view>
+
+  <!-- 梦境帖子列表 -->
+  <view class="dream-list">
+    <view class="dream-item" wx:for="{{dreamPosts}}" wx:key="postId">
+      <!-- 视频卡片 -->
+      <view bindtap="onViewDream" data-post-id="{{item.postId}}">
+        <view class="video-card" wx:if="{{item.videoUrl && item.videoUrl !== ''}}">
+          <video class="dream-video" src="{{item.videoUrl}}" controls="{{false}}" show-center-play-btn="{{false}}" show-play-btn="{{false}}" muted="{{true}}" loop="{{true}}" autoplay="{{false}}" poster="{{item.imageUrl || ''}}"></video>
+          <view class="video-overlay">
+            <van-icon name="play" size="60rpx" class="play-icon" />
+          </view>
+        </view>
+
+        <!-- 梦境图片 -->
+        <image class="dream-image" src="{{item.imageUrl}}" mode="aspectFill" wx:elif="{{item.imageUrl && item.imageUrl !== ''}}"></image>
+
+        <!-- 梦境内容 -->
+        <view class="dream-content">
+          <text class="dream-text">{{item.dreamDescription}}</text>
+        </view>
+        <!-- 关键词标签 -->
+        <view class="keywords-section" wx:if="{{item.keywords && item.keywords.length > 0}}">
+          <view class="keywords">
+            <text class="keyword-tag" wx:for="{{item.keywords}}" wx:key="*this" wx:for-item="keyword">{{keyword}}</text>
+          </view>
+        </view>
+      </view>
+      <!-- 操作按钮和统计信息 -->
+      <view class="actions">
+        <view class="stats">
+          <text class="create-time">{{item.createdAt}}</text>
+        </view>
+
+        <view class="action-buttons">
+          <view class="action-btn like-btn {{item.isLiked ? 'liked' : ''}}" data-post-id="{{item.postId}}" catchtap="onLike">
+            <van-icon size="32rpx" name="{{item.isLiked ? 'like' : 'like-o'}}" class="action-icon {{item.isLiked ? 'liked' : ''}}" />
+            <text class="action-text">{{item.likeCount}}</text>
+          </view>
+
+          <view class="action-btn favorite-btn {{item.isFavorited ? 'favorited' : ''}}" data-post-id="{{item.postId}}" catchtap="onFavorite">
+            <van-icon size="32rpx" name="{{item.isFavorited ? 'star' : 'star-o'}}" class="action-icon {{item.isFavorited ? 'favorited' : ''}}" />
+            <text class="action-text">{{item.favoriteCount}}</text>
+          </view>
+          <van-toast id="van-toast" />
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 加载状态 -->
+  <view class="loading" wx:if="{{loading}}">
+    <text>{{i18n.community.loading}}</text>
+  </view>
+
+  <!-- 加载更多状态 -->
+  <view class="load-more" wx:if="{{loading && dreamPosts.length > 0}}">
+    <text>{{i18n.community.loadingMore}}</text>
+  </view>
+
+  <!-- 没有更多数据 -->
+  <view class="no-more" wx:if="{{!loading && !hasMore && dreamPosts.length > 0}}">
+    <text>{{i18n.community.noMoreContent}}</text>
+  </view>
+
+  <!-- 空状态 -->
+  <view class="empty-state" wx:if="{{!loading && dreamPosts.length === 0}}">
+    <text class="empty-icon">🌙</text>
+    <text class="empty-text">{{i18n.community.emptyTitle}}</text>
+    <text class="empty-desc">{{i18n.community.emptyDesc}}</text>
+  </view>
+
+  <!-- 登录弹窗 -->
+  <login-modal 
+    show="{{showLoginModal}}" 
+    title="{{i18n.community.loginTitle}}" 
+    subtitle="{{i18n.community.loginSubtitle}}"
+    bind:loginSuccess="onLoginSuccess"
+    bind:close="onCloseLoginModal"
+    bind:loginCancel="onCloseLoginModal"
+  />
+</view>
+
+<!-- 自定义tabBar -->
+<custom-tabbar />

@@ -1,0 +1,299 @@
+<!--梦境日记页-->
+<view class="container language-{{language}}">
+  <!-- 背景图片 -->
+  <image class="background-image" src="{{imageUrls.BACKGROUNDS.DREAM_ANALYSIS_RESULT}}" mode="aspectFill"></image>
+  
+
+  <!-- 加载状态 -->
+  <view class="loading-state" wx:if="{{loading}}">
+    <view class="loading-content">
+      <view class="loading-spinner"></view>
+      <text class="loading-text">{{i18n.diary.loading}}</text>
+    </view>
+  </view>
+
+  <!-- 结果内容 -->
+  <view class="result-content" wx:elif="{{result}}">
+    <!-- 梦境内容 -->
+    <view class="dream-content-section">
+      <view class="section-title">{{i18n.diary.dreamContent}}</view>
+      <view class="cloud-card dream-content-card">
+        <text class="dream-text" user-select="{{true}}">{{result.dreamDescription}}</text>
+      </view>
+    </view>
+
+    <!-- 关键词 -->
+    <view class="keywords-section" wx:if="{{result.keywords && result.keywords.length > 0}}">
+      <view class="section-title">{{i18n.diary.keywords}}</view>
+      <view class="keywords-container">
+        <view class="keyword-tag" wx:for="{{result.keywords}}" wx:key="index">
+          {{item}}
+        </view>
+      </view>
+    </view>
+
+    <!-- 梦境解析 -->
+    <view class="analysis-section" wx:if="{{result.interpretation}}">
+      <view class="section-title">{{i18n.diary.dreamAnalysis}}</view>
+      <view class="cloud-card analysis-card">
+        <view class="analysis-content">
+          <view 
+            class="analysis-paragraph" 
+            wx:for="{{result.interpretationParagraphs}}" 
+            wx:key="index"
+            user-select="{{true}}"
+          >
+            {{item}}
+          </view>
+        </view>
+        <view class="ai-disclaimer">
+          <text class="disclaimer-text">{{i18n.diary.aiDisclaimer}}</text>
+        </view>
+      </view>
+    </view>
+
+    <!-- 疏导性问题 -->
+    <view class="guiding-questions-section" wx:if="{{result.guidingQuestion1 || result.guidingQuestion2}}">
+      <view class="section-title">{{i18n.diary.guidingQuestions}}</view>
+      <view class="cloud-card guiding-questions-card">
+        <view class="questions-intro">
+          <text class="intro-text">{{i18n.diary.questionsIntro}}</text>
+        </view>
+        
+        <!-- 引导问题折叠面板 -->
+        <van-collapse value="{{activeNames}}" bind:change="onCollapseChange" wx:if="{{result.guidingQuestion1 || result.guidingQuestion2}}">
+          <!-- 问题一 -->
+          <van-collapse-item 
+            name="question1" 
+            title="{{i18n.diary.question1}}" 
+            wx:if="{{result.guidingQuestion1}}"
+            custom-class="question-collapse-item"
+          >
+            <view class="question-content">
+              <text class="question-text" user-select="{{true}}">{{result.guidingQuestion1}}</text>
+            </view>
+            <view class="answer-container" wx:if="{{!result.guidingQuestion1Answer}}">
+              <textarea 
+                class="answer-textarea"
+                placeholder="{{i18n.diary.answerPlaceholder}}"
+                value="{{answer1}}"
+                bindinput="onAnswer1Input"
+                maxlength="500"
+                show-confirm-bar="{{false}}"
+              ></textarea>
+              <view class="char-count">{{answer1.length}}/500</view>
+            </view>
+          </van-collapse-item>
+
+          <!-- 问题二 -->
+          <van-collapse-item 
+            name="question2" 
+            title="{{i18n.diary.question2}}" 
+            wx:if="{{result.guidingQuestion2}}"
+            custom-class="question-collapse-item"
+          >
+            <view class="question-content">
+              <text class="question-text" user-select="{{true}}">{{result.guidingQuestion2}}</text>
+            </view>
+            <view class="answer-container" wx:if="{{!result.guidingQuestion2Answer}}">
+              <textarea 
+                class="answer-textarea"
+                placeholder="{{i18n.diary.answerPlaceholder}}"
+                value="{{answer2}}"
+                bindinput="onAnswer2Input"
+                maxlength="500"
+                show-confirm-bar="{{false}}"
+              ></textarea>
+              <view class="char-count">{{answer2.length}}/500</view>
+            </view>
+          </van-collapse-item>
+        </van-collapse>
+
+        <!-- 保存回答按钮 -->
+        <view class="save-answers-container" wx:if="{{(!result.guidingQuestion1Answer && answer1) || (!result.guidingQuestion2Answer && answer2)}}">
+          <button 
+            class="save-answers-btn {{savingAnswers ? 'saving' : ''}}"
+            bindtap="onSaveAnswers"
+            disabled="{{savingAnswers}}"
+          >
+            <text wx:if="{{!savingAnswers}}">{{i18n.diary.saveAnswers}}</text>
+            <text wx:else>{{i18n.diary.saving}}</text>
+          </button>
+        </view>
+      </view>
+    </view>
+
+    <!-- AI梦境图像（仅文生图模式） -->
+    <view class="image-section" wx:if="{{!isVideoType && result.imageUrl}}">
+      <view class="section-title">{{i18n.diary.aiImage}}</view>
+      <view class="image-container">
+        <image class="dream-image" src="{{result.imageUrl}}" mode="aspectFill" bindtap="onPreviewImage" />
+      </view>
+      <view class="image-description" wx:if="{{result.imagePrompt}}">
+        <text class="description-text" user-select="{{true}}">{{result.imagePrompt}}</text>
+      </view>
+    </view>
+
+    <!-- AI梦境视频（仅文生视频模式） -->
+    <view class="video-section" wx:if="{{isVideoType}}">
+      <view class="section-title">{{i18n.diary.aiVideo}}</view>
+      
+      <!-- 视频生成中状态 -->
+      <view class="video-status-container" wx:if="{{videoStatus === 1}}">
+        <view class="cloud-card video-status-card">
+          <view class="status-icon">⏳</view>
+          <view class="status-text">{{i18n.diary.videoGenerating}}</view>
+          <view class="status-tip">{{i18n.diary.videoGeneratingTip}}</view>
+        </view>
+      </view>
+
+      <!-- 视频生成失败状态 -->
+      <view class="video-status-container" wx:if="{{videoStatus === 3}}">
+        <view class="cloud-card video-status-card">
+          <view class="status-icon">❌</view>
+          <view class="status-text">{{i18n.diary.videoFailed}}</view>
+          <view class="status-tip">{{i18n.diary.videoFailedTip}}</view>
+        </view>
+      </view>
+
+      <!-- 视频卡片（类似图片卡片样式） -->
+      <view class="video-card-container" wx:if="{{videoStatus === 2 && videoUrl}}">
+        <view class="cloud-card video-card">
+          <!-- 视频播放器 -->
+          <view class="video-container">
+            <video 
+              class="dream-video"
+              src="{{videoUrl}}"
+              controls
+              show-center-play-btn
+              enable-play-gesture
+              object-fit="contain"
+            ></video>
+          </view>
+          
+          <!-- 视频操作按钮 -->
+          <view class="video-actions">
+            <button class="video-action-btn download-btn" bindtap="onDownloadVideo">
+              <text class="action-icon">⬇️</text>
+              <text class="action-text">{{i18n.diary.downloadVideo}}</text>
+            </button>
+          </view>
+          
+          <!-- 视频提示词描述 -->
+          <view class="video-description" wx:if="{{result.videoPrompt}}">
+            <text class="description-text" user-select="{{true}}">{{result.videoPrompt}}</text>
+          </view>
+        </view>
+      </view>
+    </view>
+
+    <!-- 发布/海报 按钮横排 -->
+    <view class="actions-section" wx:if="{{result}}">
+      <!-- 已发布到社区，显示设置为仅个人可见按钮 -->
+      <button class="action-btn private-button small" wx:if="{{result.analysisId && isLoggedIn && result.visibility === 1}}" bindtap="onSetToPrivate">
+        <text class="private-icon">🔒</text>
+        <text class="private-text">{{i18n.diary.setToPrivate}}</text>
+      </button>
+      
+      <!-- 未发布到社区，显示发布按钮 -->
+      <button class="action-btn publish-button small" wx:elif="{{result.analysisId && isLoggedIn}}" bindtap="onPublishToCommunity">
+        <text class="publish-icon">📤</text>
+        <text class="publish-text">{{i18n.diary.publish}}</text>
+      </button>
+      
+      <button class="action-btn poster-button small" bindtap="onGeneratePoster">
+        <text class="poster-icon">🎨</text>
+        <text class="poster-text">{{i18n.diary.generatePoster}}</text>
+      </button>
+    </view>
+
+    <!-- 反馈区域 -->
+    <view class="feedback-section" wx:if="{{result}}">
+      <view class="section-title">{{i18n.diary.rateUs}}</view>
+      <view class="cloud-card feedback-card">
+        <!-- 反馈表单 -->
+        <view wx:if="{{!feedbackSubmitted}}">
+          <!-- 星级评分 -->
+          <view class="rating-container">
+            <text class="rating-label">{{i18n.diary.ratingLabel}}</text>
+            <view class="stars-container">
+              <view 
+                class="star {{index < feedbackRating ? 'active' : ''}}" 
+                wx:for="{{[1,2,3,4,5]}}" 
+                wx:key="index"
+                data-rating="{{index + 1}}"
+                bindtap="onStarTap"
+              >
+                {{index < feedbackRating ? '⭐' : '☆'}}
+              </view>
+            </view>
+            <text class="rating-text">{{feedbackRating > 0 ? feedbackRating + i18n.diary.score : i18n.diary.selectRating}}</text>
+          </view>
+          
+          <!-- 反馈输入框 -->
+          <view class="feedback-input-container">
+            <text class="feedback-label">{{i18n.diary.feedbackLabel}}</text>
+            <textarea 
+              class="feedback-textarea"
+              placeholder="{{i18n.diary.feedbackPlaceholder}}"
+              value="{{feedbackContent}}"
+              bindinput="onFeedbackInput"
+              maxlength="1000"
+              show-confirm-bar="{{false}}"
+            ></textarea>
+            <view class="char-count">{{feedbackContent.length}}/1000</view>
+          </view>
+          
+          <!-- 提交按钮 -->
+          <button 
+            class="feedback-submit-btn {{submittingFeedback ? 'submitting' : ''}}"
+            bindtap="onSubmitFeedback"
+            disabled="{{submittingFeedback}}"
+          >
+            <text wx:if="{{!submittingFeedback}}">{{i18n.diary.submitFeedback}}</text>
+            <text wx:else>{{i18n.diary.submitting}}</text>
+          </button>
+        </view>
+        
+        <!-- 感谢信息 -->
+        <view class="thank-you-container" wx:if="{{feedbackSubmitted}}">
+          <view class="thank-you-icon">🙏</view>
+          <text class="thank-you-title">{{i18n.diary.thankYouTitle}}</text>
+          <text class="thank-you-text">{{i18n.diary.thankYouText}}</text>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 无数据状态 -->
+  <view class="empty-state" wx:elif="{{!loading && !result}}">
+    <view class="empty-content">
+      <text class="empty-icon">🌙</text>
+      <text class="empty-text">{{i18n.diary.noResult}}</text>
+    </view>
+  </view>
+
+  <!-- poster组件用于海报生成 -->
+  <poster 
+    id="poster" 
+    config="{{posterConfig}}"
+    bind:success="onPosterSuccess" 
+    bind:fail="onPosterFail"
+    style="position: fixed; top: -9999rpx; left: -9999rpx; width: 0rpx; height: 0rpx; opacity: 0;"
+  >
+  </poster>
+  
+  <!-- 隐藏的canvas用于视频封面生成 -->
+  <canvas 
+    id="video-canvas" 
+    type="2d" 
+    style="position: fixed; top: -9999rpx; left: -9999rpx; width: 0rpx; height: 0rpx; opacity: 0;"
+  ></canvas>
+  
+  <!-- 个人信息设置弹窗 -->
+  <profile-setup-modal 
+    show="{{showProfileSetupModal}}"
+    bind:setupComplete="onProfileSetupComplete"
+    bind:close="onCloseProfileSetupModal"
+  />
+</view>
