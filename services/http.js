@@ -67,12 +67,6 @@ function request(options) {
       timeout: timeout || config.timeout || 30000,
       success: (res) => {
         wx.hideLoading();
-        
-        logger.info('请求成功:', {
-          statusCode: res.statusCode,
-          data: res.data
-        });
-
         // 处理响应
         if (res.statusCode >= 200 && res.statusCode < 300) {
           // 业务成功

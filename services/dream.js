@@ -1,18 +1,29 @@
 // 梦境相关API服务
 const { post, get } = require('./http.js');
-const { t } = require('../utils/i18n.js');
+const { t, getLang } = require('../utils/i18n.js');
 
 /**
- * 梦境解析 - 文生图
+ * 梦境解析 - 文生图（适配新接口）
  * @param {Object} data 梦境数据
  * @param {string} data.dreamDescription 梦境描述
- * @param {number} data.isPublic 是否公开 0-仅自己 1-公开
- * @returns {Promise} 解析结果
+ * @param {number} [data.isPublic] 是否公开 0-仅自己 1-公开，默认0
+ * @param {string} [data.language] 语言，例如 zh-CN/en-US（可选，不传则自动根据当前语言设置）
+ * @returns {Promise} { code, data, message }
  */
 function analyzeDream(data) {
+  // 获取当前语言并转换为接口需要的格式
+  const currentLang = getLang();
+  const languageMap = {
+    'zh': 'zh-CN',
+    'en': 'en-US'
+  };
+  const apiLanguage = data.language || languageMap[currentLang] || 'zh-CN';
+
   return post('/dream/analyze', {
-    dreamDescription: data.dreamDescription,
-    isPublic: data.isPublic || 0
+    // 新接口采用 camelCase 字段
+    dream_description: data.dreamDescription,
+    is_public: data.isPublic || 0,
+    language: apiLanguage
   }, {
     showLoading: false,
     loadingText: t('dream.analyzingText'),
@@ -28,9 +39,19 @@ function analyzeDream(data) {
  * @returns {Promise} 解析结果（包含taskId用于轮询）
  */
 function analyzeDreamWithVideo(data) {
+  // 获取当前语言并转换为接口需要的格式（与文生图一致）
+  const currentLang = getLang();
+  const languageMap = {
+    'zh': 'zh-CN',
+    'en': 'en-US'
+  };
+  const apiLanguage = data.language || languageMap[currentLang] || 'zh-CN';
+
   return post('/dream/analyze-with-video', {
-    dreamDescription: data.dreamDescription,
-    isPublic: data.isPublic || 0
+    // 最新接口采用 snake_case 字段
+    dream_description: data.dreamDescription,
+    is_public: data.isPublic || 0,
+    language: apiLanguage
   }, {
     showLoading: false,
     loadingText: t('dream.analyzingVideo'),
@@ -46,6 +67,19 @@ function analyzeDreamWithVideo(data) {
 function getVideoStatus(taskId) {
   return get('/dream/video-status', {
     taskId: taskId
+  });
+}
+
+/**
+ * 轮询梦境解析状态（包含图片/视频等）
+ * @param {string} analysisId 任务ID
+ * @returns {Promise} 状态信息
+ */
+function getDreamStatus(analysisId) {
+  return get('/dream/status', {
+    analysis_id: analysisId
+  }, {
+    showLoading: false
   });
 }
 
@@ -137,6 +171,7 @@ module.exports = {
   analyzeDream,
   analyzeDreamWithVideo,
   getVideoStatus,
+  getDreamStatus,
   getDreamHistory,
   getDreamDetail,
   deleteDream,

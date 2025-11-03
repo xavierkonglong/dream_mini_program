@@ -98,6 +98,7 @@ const i18n = {
       versionContent:
         "梦境解析小程序\n版本：v3.0\n\n更新内容：\n• 全新UI设计\n• 梦境分析功能\n• 社区互动\n• 个人中心",
       logout: "退出登录",
+      logoutSuccess: "已退出登录",
       confirmLogout: "确认退出",
       confirmLogoutContent: "确定要退出登录吗？",
       cancel: "取消",
@@ -303,6 +304,8 @@ const i18n = {
         "确定要将此梦境解析结果发布到社区吗？其他用户将可以看到你的梦境内容。",
       publish: "发布",
       cancel: "取消",
+      setToPrivate: "设置为仅个人可见",
+      setSuccess: "设置成功",
       dataErrorMissingId: "数据错误，缺少analysisId",
       publishing: "发布中...",
       publishSuccess: "发布成功",
@@ -532,6 +535,7 @@ const i18n = {
       versionContent:
         "Dream Analysis Mini Program\nVersion: v3.0\n\nUpdates:\n• Brand new UI design\n• Dream analysis features\n• Community interaction\n• Personal center",
       logout: "Logout",
+      logoutSuccess: "Logged out",
       confirmLogout: "Confirm Logout",
       confirmLogoutContent: "Are you sure you want to logout?",
       cancel: "Cancel",
@@ -741,6 +745,8 @@ const i18n = {
         "Are you sure you want to publish this dream analysis result to the community? Other users will be able to see your dream content.",
       publish: "Publish",
       cancel: "Cancel",
+        setToPrivate: "Set to Private",
+        setSuccess: "Set successfully",
       dataErrorMissingId: "Data error, missing analysisId",
       publishing: "Publishing...",
       publishSuccess: "Published successfully",

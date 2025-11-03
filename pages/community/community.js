@@ -24,6 +24,8 @@ Page({
     isProcessing: false, // 防止重复点击
     language: "zh", // 语言设置
     i18n: {}, // 国际化文本
+    // 排序：time(最新) | like(点赞最多) | favorite(收藏最多)
+    activeSort: "time",
   },
 
   /**
@@ -211,9 +213,15 @@ Page({
       //   pageSize: this.data.pageSize
       // });
 
+      // 根据 activeSort 组装接口需要的参数
+      const dimension = this.data.activeSort; // time | like | favorite
+      const order = dimension === "favorite" ? "asc" : "desc";
+
       const response = await http.get("/dream/posts/public", {
         pageNum: this.data.pageNum,
         pageSize: this.data.pageSize,
+        dimension,
+        order,
       });
 
       // console.log('=== API响应 ===');
@@ -284,6 +292,22 @@ Page({
     } finally {
       this.setData({ loading: false });
     }
+  },
+
+  /**
+   * 切换筛选排序（Tabs）
+   */
+  onChangeSort(e) {
+    // vant tabs 在 weapp 下 change 事件 detail 可能包含 { name, title, index }
+    const nextSort = e?.detail?.name || (e?.detail?.index === 1 ? "like" : e?.detail?.index === 2 ? "favorite" : "time");
+    if (nextSort === this.data.activeSort) return;
+    this.setData({
+      activeSort: nextSort,
+      dreamPosts: [],
+      pageNum: 1,
+      hasMore: true,
+    });
+    this.loadDreamPosts();
   },
 
   /**

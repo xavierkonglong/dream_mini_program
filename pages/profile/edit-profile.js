@@ -164,9 +164,10 @@ Page({
       if (response && response.code === 0 && response.data) {
         const userData = response.data;
         const formData = {
-          nickName: userData.userName || "",
-          phone: userData.userPhone || "",
-          avatarUrl: userData.userAvatar || "",
+          // 后端字段为下划线命名
+          nickName: userData.user_name || "",
+          phone: userData.user_phone || "",
+          avatarUrl: userData.user_avatar || "",
         };
 
         this.setData({
@@ -209,7 +210,9 @@ Page({
    * 昵称输入
    */
   onNickNameInput(e) {
-    const value = e.detail.value || e.detail;
+    const value = (e && e.detail && typeof e.detail.value !== "undefined")
+      ? String(e.detail.value)
+      : "";
     this.setData({
       "userInfo.nickName": value,
     });
@@ -219,7 +222,9 @@ Page({
    * 手机号输入
    */
   onPhoneInput(e) {
-    const value = e.detail.value || e.detail;
+    const value = (e && e.detail && typeof e.detail.value !== "undefined")
+      ? String(e.detail.value)
+      : "";
     console.log("手机号输入:", value);
     // 阻止事件冒泡，防止触发其他页面的事件
     e.stopPropagation && e.stopPropagation();
@@ -286,6 +291,20 @@ Page({
         };
 
         authService.setCurrentUser(updatedUser);
+
+        // 立即同步更新上一页（个人信息页）的显示名称，避免返回后短暂不刷新
+        const pages = getCurrentPages();
+        const prevPage = pages && pages.length > 1 ? pages[pages.length - 2] : null;
+        if (prevPage && prevPage.setData) {
+          // 通用处理：如果上一页有 userInfo，就直接更新 userName
+          try {
+            prevPage.setData({
+              "userInfo.userName": nickName,
+            });
+          } catch (e) {
+            // 忽略非致命错误
+          }
+        }
 
         wx.showToast({
           title: this.data.i18n.editProfile.saveSuccess,

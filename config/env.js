@@ -2,14 +2,15 @@
 const { DEFAULT_CONFIG } = require('../constants/index.js');
 
 // 当前环境 (dev | test | prod)
-const ENV = 'prod';
+// const ENV = 'prod';
+const ENV = 'dev';
 
 // 环境配置映射
 const ENV_CONFIG = {
   // 开发环境
   dev: {
     env: 'dev',
-    baseURL: 'http://localhost:8087/api/v1',
+    baseURL: 'http://192.168.1.53:8000/api/v1',
     enableLog: true,
     enableMock: true,
     enableDebug: true,

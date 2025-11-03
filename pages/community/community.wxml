@@ -1,8 +1,28 @@
 <!--pages/community/community.wxml-->
 <view class="container language-{{language}}">
   <!-- 页面标题 -->
-  <view class="header">
+  <!-- <view class="header">
     <text class="subtitle">{{i18n.community.subtitle}}</text>
+  </view> -->
+
+  <!-- 筛选 Tabs：最新 / 点赞最多 / 收藏最多 -->
+  <view class="filter-sticky">
+    <van-tabs 
+      active="{{activeSort}}" 
+      sticky 
+      color="#8B5CF6" 
+      background="rgba(255,255,255,0.85)" 
+      swipeable="{{false}}" 
+      bind:change="onChangeSort"
+      custom-class="community-tabs"
+      nav-class="community-tabs__nav"
+      tab-class="community-tabs__tab"
+      line-class="community-tabs__line"
+    >
+      <van-tab title="最新" name="time" />
+      <van-tab title="点赞最多" name="like" />
+      <van-tab title="收藏最多" name="favorite" />
+    </van-tabs>
   </view>
 
   <!-- 梦境帖子列表 -->

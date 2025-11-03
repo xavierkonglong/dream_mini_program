@@ -2,6 +2,7 @@
 const http = require('./http.js');
 const storage = require('../utils/storage.js');
 const logger = require('../utils/logger.js');
+const { t } = require('../utils/i18n.js');
 
 class AuthService {
   constructor() {
@@ -32,7 +33,7 @@ class AuthService {
       
       const response = await http.post('/auth/wechat/login', loginData, {
         showLoading: true,
-        loadingText: '登录中...'
+        loadingText: t('loginModal.logging')
       });
 
       if (response.code === 0 && response.data) {
@@ -180,7 +181,7 @@ class AuthService {
 
       // 显示提示
       wx.showToast({
-        title: '已退出登录',
+        title: t('profileDetail.logoutSuccess'),
         icon: 'success',
         duration: 1500
       });

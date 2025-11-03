@@ -1,0 +1,10 @@
+{
+  "usingComponents": {},
+  "navigationBarTitleText": "积分任务",
+  "navigationBarBackgroundColor": "#8B5CF6",
+  "navigationBarTextStyle": "white",
+  "backgroundColor": "#8B5CF6",
+  "backgroundTextStyle": "light",
+  "enablePullDownRefresh": false
+}
+

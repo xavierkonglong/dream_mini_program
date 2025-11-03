@@ -9,6 +9,9 @@ Page({
     isLoggedIn: false,
     imageUrls: IMAGE_URLS,
     posterConfig: null,
+    // 文生图轮询
+    imageLoading: false,
+    imagePollCount: 0,
     showProfileSetupModal: false,
     feedbackRating: 0,
     feedbackContent: "",
@@ -19,7 +22,8 @@ Page({
     isVideoType: false,
     videoTaskId: null,
     videoUrl: null,
-    videoStatus: "pending", // pending, processing, completed, failed
+    videoStatus: "pending", // 统一内部语义：'pending'|'processing'|'completed'|'failed'
+    videoPollCount: 0,
     // 疏导性问题相关
     answer1: "",
     answer2: "",
@@ -50,17 +54,28 @@ Page({
 
     if (options.data) {
       try {
-        const result = JSON.parse(decodeURIComponent(options.data));
+        let result = JSON.parse(decodeURIComponent(options.data));
         console.log("解析结果数据:", result);
         console.log("analysisId:", result.analysisId);
         console.log("analysisId类型:", typeof result.analysisId);
         console.log("generationType:", result.generationType);
 
-        // 确保analysisId是数字类型
-        if (result.analysisId) {
-          result.analysisId = parseInt(result.analysisId);
-          console.log("转换后的analysisId:", result.analysisId);
-        }
+        // 归一化：兼容新蛇形扁平结构，转成 camelCase
+        result = {
+          analysisId: result.analysisId || result.analysis_id || "",
+          dreamDescription: result.dreamDescription || result.dream_description || "",
+          keywords: result.keywords || [],
+          interpretation: result.interpretation || "",
+          imagePrompt: result.imagePrompt || result.image_prompt || "",
+          imageTaskId: result.imageTaskId || result.image_task_id || "",
+          imageStatus: result.imageStatus || result.image_status || "",
+          imageUrl: result.imageUrl || result.image_url || null,
+          guidingQuestionsJson:
+            result.guidingQuestionsJson || result.guiding_questions_json || "",
+          generationType: result.generationType || "image",
+          // 兼容保留原始字段，避免后续逻辑意外依赖
+          _raw: result,
+        };
 
         // 格式化解析内容，进行智能分段
         if (result.interpretation) {
@@ -133,15 +148,20 @@ Page({
         const isVideoType = result.generationType === "video";
         const videoTaskId = result.videoTaskId || null;
 
-        if (isVideoType && videoTaskId) {
+        if (isVideoType) {
           console.log("视频类型，任务ID:", videoTaskId);
+          // 先落盘 result，避免轮询时取不到 analysisId
           this.setData({
+            result,
+            loading: false,
             isVideoType: true,
             videoTaskId: videoTaskId,
-            videoStatus: 1, // 改为数字 1，表示进行中
+            videoStatus: (result._raw?.video_status || result.videoStatus || "processing"),
           });
-          // 开始轮询视频状态
-          this.startVideoPolling();
+          // 若还没有视频URL，基于 analysisId 轮询 /dream/status
+          if (!result.videoUrl) {
+            this.startVideoPolling();
+          }
         }
 
         // 预加载AI图片，转为本地临时路径，避免跨域/域名解析问题
@@ -157,6 +177,10 @@ Page({
             .catch(() => {
               this.setData({ result, loading: false });
             });
+        } else if (!isVideoType && !result.imageUrl) {
+          // 文生图还未就绪，开始轮询图片
+          this.setData({ result, loading: false, imageLoading: true });
+          this.startImagePolling();
         } else {
           this.setData({ result, loading: false });
         }
@@ -167,6 +191,106 @@ Page({
           title: this.data.i18n.result.dataError,
           icon: "error",
         });
+      }
+    }
+  },
+
+  /**
+   * 开始图片轮询（每5秒一次，最多10次）
+   */
+  startImagePolling() {
+    try {
+      // 采用串行轮询：本次请求完成后，再等待5秒触发下一次
+      this.pollImageStatus();
+    } catch (e) {
+      console.error("启动图片轮询失败:", e);
+    }
+  },
+
+  /**
+   * 停止图片轮询
+   */
+  stopImagePolling() {
+    if (this.imagePollingTimer) {
+      clearTimeout(this.imagePollingTimer);
+      this.imagePollingTimer = null;
+    }
+  },
+
+  /**
+   * 轮询图片状态：调用 /api/v1/dream/status?analysis_id=xxx，
+   * 若返回的 image_url 为 null 则继续，最多10次或页面离开。
+   */
+  async pollImageStatus() {
+    const { result, imagePollCount, imageLoading } = this.data;
+    if (!imageLoading) return;
+
+    // 达到最大次数后停止
+    if (imagePollCount >= 10) {
+      this.stopImagePolling();
+      this.setData({ imageLoading: false });
+      return;
+    }
+
+    let requestSucceeded = false;
+    try {
+      const dreamService = require("../../services/dream.js");
+      if (!result || !result.analysisId) {
+        console.warn("图片轮询缺少 analysisId，停止轮询");
+        this.stopImagePolling();
+        this.setData({ imageLoading: false });
+        return;
+      }
+
+      const resp = await dreamService.getDreamStatus(result.analysisId);
+      if (resp && resp.code === 0 && resp.data) {
+        requestSucceeded = true;
+        const latest = resp.data;
+
+        // 归一化结构
+        const normalized = {
+          analysisId: latest.analysis_id || latest.analysisId || result.analysisId,
+          dreamDescription: latest.dream_description || latest.dreamDescription || result.dreamDescription || "",
+          keywords: latest.keywords || result.keywords || [],
+          interpretation: latest.interpretation || result.interpretation || "",
+          imagePrompt: latest.image_prompt || latest.imagePrompt || result.imagePrompt || "",
+          imageTaskId: latest.image_task_id || latest.imageTaskId || result.imageTaskId || "",
+          imageStatus: latest.image_status || latest.imageStatus || result.imageStatus || "",
+          imageUrl: latest.image_url || latest.imageUrl || null,
+          guidingQuestionsJson: latest.guiding_questions_json || latest.guidingQuestionsJson || result.guidingQuestionsJson || "",
+          generationType: result.generationType || "image",
+          _raw: latest,
+        };
+
+        if (normalized.interpretation) {
+          normalized.interpretationParagraphs = this.formatInterpretation(
+            normalized.interpretation
+          );
+        }
+
+        if (normalized.imageUrl) {
+          const localPath = await this.ensureLocalImage(normalized.imageUrl);
+          normalized.imageUrl = localPath || normalized.imageUrl;
+          this.setData({ result: normalized, imageLoading: false });
+          this.stopImagePolling();
+          return;
+        }
+
+        // 未拿到图片，更新其他字段并继续轮询
+        this.setData({ result: normalized });
+      }
+    } catch (error) {
+      // 静默错误，继续尝试下一次
+      console.warn("图片轮询失败，继续重试:", error);
+    } finally {
+      const nextCount = imagePollCount + 1;
+      this.setData({ imagePollCount: nextCount });
+
+      // 若仍在加载且未达上限，并且请求成功，则3秒后进入下一次轮询
+      if (requestSucceeded && this.data.imageLoading && nextCount < 10) {
+        this.imagePollingTimer = setTimeout(() => {
+          this.pollImageStatus();
+        }, 3000);
       }
     }
   },
@@ -201,6 +325,8 @@ Page({
           confirmPublish: t("result.confirmPublish"),
           publish: t("result.publish"),
           cancel: t("result.cancel"),
+          setToPrivate: t("result.setToPrivate"),
+          setSuccess: t("result.setSuccess"),
           dataErrorMissingId: t("result.dataErrorMissingId"),
           publishing: t("result.publishing"),
           publishSuccess: t("result.publishSuccess"),
@@ -315,12 +441,16 @@ Page({
     console.log("结果页隐藏");
     // 停止视频轮询
     this.stopVideoPolling();
+    // 停止图片轮询
+    this.stopImagePolling();
   },
 
   onUnload() {
     console.log("结果页卸载");
     // 停止视频轮询
     this.stopVideoPolling();
+    // 停止图片轮询
+    this.stopImagePolling();
   },
 
   /**
@@ -334,16 +464,14 @@ Page({
   },
 
   /**
-   * 开始视频状态轮询（每15秒一次）
+   * 开始视频状态轮询（串行：每次完成后等待5秒再请求，最多10次）
    */
   startVideoPolling() {
     console.log("开始视频轮询");
-    // 先立即查询一次
-    this.pollVideoStatus();
-    // 然后每15秒查询一次
-    this.videoPollingTimer = setInterval(() => {
+    // 首次进入先延迟100秒再开始轮询
+    this.videoPollingTimer = setTimeout(() => {
       this.pollVideoStatus();
-    }, 15000); // 15秒
+    }, 100000);
   },
 
   /**
@@ -352,7 +480,7 @@ Page({
   stopVideoPolling() {
     if (this.videoPollingTimer) {
       console.log("停止视频轮询");
-      clearInterval(this.videoPollingTimer);
+      clearTimeout(this.videoPollingTimer);
       this.videoPollingTimer = null;
     }
   },
@@ -361,61 +489,106 @@ Page({
    * 轮询视频状态
    */
   async pollVideoStatus() {
-    const { videoTaskId, videoStatus } = this.data;
+    const { result, videoPollCount, videoStatus } = this.data;
 
-    // 如果任务已完成或失败，停止轮询
-    if (videoStatus === 2 || videoStatus === 3) {
+    // 已完成/失败则停止
+    if (videoStatus === "completed" || videoStatus === "failed") {
       this.stopVideoPolling();
       return;
     }
 
-    if (!videoTaskId) {
-      console.error("缺少视频任务ID");
+    // 达到最大次数后停止（最多20次）
+    if (videoPollCount >= 20) {
+      this.stopVideoPolling();
       return;
     }
 
+    if (!result || !result.analysisId) {
+      console.error("缺少 analysisId，无法轮询视频状态");
+      this.stopVideoPolling();
+      return;
+    }
+
+    let requestSucceeded = false;
     try {
-      console.log("查询视频状态, taskId:", videoTaskId);
       const dreamService = require("../../services/dream.js");
-      const response = await dreamService.getVideoStatus(videoTaskId);
-
-      console.log("视频状态响应:", response);
-
+      const response = await dreamService.getDreamStatus(result.analysisId);
       if (response && response.code === 0 && response.data) {
-        const { status, videoUrl } = response.data;
+        requestSucceeded = true;
+        const latest = response.data;
+        const latestStatus = latest.video_status || latest.videoStatus || "processing";
+        const latestUrl = latest.video_url || latest.videoUrl || null;
+        const latestImageUrl = latest.image_url || latest.imageUrl || null;
 
-        console.log("视频状态:", status, "视频URL:", videoUrl);
+        const update = { videoStatus: latestStatus };
 
-        // 更新状态 - 直接使用后端返回的数字状态
-        const updateData = {
-          videoStatus: status,
-        };
-
-        if (status === 2 && videoUrl) {
-          updateData.videoUrl = videoUrl;
-          // 停止轮询
+        if (latestStatus === "completed" && latestUrl) {
+          update.videoUrl = latestUrl;
+          this.setData(update);
+          // 同步最新的封面图（image_url）到 result.imageUrl，供海报使用
+          if (latestImageUrl) {
+            try {
+              const localCover = await this.ensureLocalImage(latestImageUrl);
+              this.setData({
+                result: Object.assign({}, this.data.result, {
+                  imageUrl: localCover || latestImageUrl,
+                }),
+              });
+            } catch (e) {
+              // 忽略封面处理失败
+            }
+          }
           this.stopVideoPolling();
-          // 提示用户视频已生成
           wx.showToast({
             title: this.data.i18n.result.videoGenerationComplete,
             icon: "success",
             duration: 2000,
           });
-        } else if (status === 3) {
-          // 停止轮询
+          return;
+        }
+
+        if (latestStatus === "failed") {
+          this.setData(update);
           this.stopVideoPolling();
           wx.showToast({
             title: this.data.i18n.result.videoGenerationFailed,
             icon: "error",
             duration: 2000,
           });
+          return;
         }
 
-        this.setData(updateData);
+        // 更新进行中状态
+        this.setData(update);
+        // 进行中也尽量同步封面图（如果后端已产生）
+        if (latestImageUrl && !this.data.result?.imageUrl) {
+          try {
+            const localCover = await this.ensureLocalImage(latestImageUrl);
+            this.setData({
+              result: Object.assign({}, this.data.result, {
+                imageUrl: localCover || latestImageUrl,
+              }),
+            });
+          } catch (e) {}
+        }
       }
     } catch (error) {
       console.error("查询视频状态失败:", error);
-      // 不中断轮询，继续尝试
+      // 不中断，继续串行轮询
+    } finally {
+      const next = (this.data.videoPollCount || 0) + 1;
+      this.setData({ videoPollCount: next });
+      // 仅在本次请求成功时，5秒后进入下一次；最多20次
+      if (
+        requestSucceeded &&
+        this.data.videoStatus !== "completed" &&
+        this.data.videoStatus !== "failed" &&
+        next < 20
+      ) {
+        this.videoPollingTimer = setTimeout(() => {
+          this.pollVideoStatus();
+        }, 5000);
+      }
     }
   },
 
@@ -1056,6 +1229,11 @@ Page({
           duration: 2000,
         });
 
+        // 立即更新本地可见性为已发布，切换按钮样式与文案
+        this.setData({
+          "result.visibility": 1,
+        });
+
         // 可以在这里添加其他成功后的处理，比如跳转到社区页面
         setTimeout(() => {
           wx.navigateTo({
@@ -1096,6 +1274,39 @@ Page({
     }
   },
 
+  // 设为仅个人可见（取消发布）
+  async setToPrivate() {
+    const { result } = this.data;
+    if (!result || !result.analysisId) return;
+    try {
+      wx.showLoading({ title: this.data.i18n.result.publishing });
+      const http = require("../../services/http.js");
+      const requestData = { analysisId: result.analysisId, isPublic: 0 };
+      const response = await http.post("/dream/posts/publish", requestData);
+      if (response && response.code === 0) {
+        wx.hideLoading();
+        wx.showToast({ title: this.data.i18n.result.setSuccess || "设置成功", icon: "success", duration: 1500 });
+        this.setData({ "result.visibility": 0 });
+      } else {
+        throw new Error(response?.message || this.data.i18n.result.publishFailed);
+      }
+    } catch (error) {
+      wx.hideLoading();
+      wx.showToast({ title: error.message || this.data.i18n.result.publishFailed, icon: "error" });
+    }
+  },
+
+  // 切换：未发布→发布；已发布→设为仅个人可见
+  onTogglePublishOrPrivate() {
+    const { result } = this.data;
+    if (!result || !result.analysisId) return;
+    if (result.visibility === 1) {
+      this.setToPrivate();
+    } else {
+      this.onPublishToCommunity();
+    }
+  },
+
   // 生成海报
   async onGeneratePoster() {
     if (!this.data.result) {
@@ -1105,6 +1316,11 @@ Page({
       });
       return;
     }
+
+    // 生成前先清理旧临时文件，避免空间不足
+    try {
+      this.cleanupUserDataDirSafe && this.cleanupUserDataDirSafe();
+    } catch (e) {}
 
     // 显示加载提示
     wx.showLoading({
@@ -1419,6 +1635,11 @@ Page({
           current: path,
           urls: [path],
         });
+        // 清理二维码临时文件（若存在）
+        if (this.qrTempPath) {
+          this.cleanupTempFile(this.qrTempPath);
+          this.qrTempPath = null;
+        }
       },
       fail: (err) => {
         console.error("保存失败:", err);
@@ -1779,19 +2000,41 @@ Page({
             if (res.statusCode === 200 && res.data) {
               try {
                 const fs = wx.getFileSystemManager();
-                const filePath = `${
-                  wx.env.USER_DATA_PATH
-                }/qr_${Date.now()}.png`;
-                fs.writeFile({
-                  filePath,
-                  data: res.data,
-                  encoding: "binary",
-                  success: () => resolve(filePath),
-                  fail: (e) => {
-                    console.warn("写入二维码失败:", e);
-                    resolve(null);
-                  },
-                });
+                const filePath = `${wx.env.USER_DATA_PATH}/qr_${Date.now()}.png`;
+                const tryWrite = () => {
+                  fs.writeFile({
+                    filePath,
+                    data: res.data,
+                    encoding: "binary",
+                    success: () => {
+                      this.qrTempPath = filePath;
+                      resolve(filePath);
+                    },
+                    fail: (e) => {
+                      console.warn("写入二维码失败:", e);
+                      const msg = (e && e.errMsg) || "";
+                      if (msg.includes("storage") || msg.includes("limit")) {
+                        try {
+                          this.cleanupUserDataDirSafe && this.cleanupUserDataDirSafe();
+                        } catch (ce) {}
+                        // 清理后重试一次
+                        fs.writeFile({
+                          filePath,
+                          data: res.data,
+                          encoding: "binary",
+                          success: () => {
+                            this.qrTempPath = filePath;
+                            resolve(filePath);
+                          },
+                          fail: () => resolve(null),
+                        });
+                      } else {
+                        resolve(null);
+                      }
+                    },
+                  });
+                };
+                tryWrite();
               } catch (e) {
                 console.warn("保存二维码异常:", e);
                 resolve(null);
@@ -1811,6 +2054,37 @@ Page({
       console.error("获取小程序码失败:", error);
       return null;
     }
+  },
+
+  // 清理临时文件
+  cleanupTempFile(filePath) {
+    try {
+      if (!filePath) return;
+      const fs = wx.getFileSystemManager();
+      fs.unlink({ filePath, success: () => {}, fail: () => {} });
+    } catch (e) {}
+  },
+
+  // 安全清理用户数据目录下我们生成的临时文件
+  cleanupUserDataDirSafe() {
+    try {
+      const fs = wx.getFileSystemManager();
+      const dir = wx.env.USER_DATA_PATH;
+      const names = fs.readdirSync(dir) || [];
+      const now = Date.now();
+      names.forEach((name) => {
+        if (name.startsWith('qr_') || name.startsWith('poster_img_')) {
+          const p = `${dir}/${name}`;
+          try {
+            const stat = fs.statSync(p);
+            const mtime = stat && stat.stats && stat.stats.mtimeMs ? stat.stats.mtimeMs : now - (11 * 60 * 1000);
+            if (now - mtime > 10 * 60 * 1000) {
+              fs.unlinkSync(p);
+            }
+          } catch (_) {}
+        }
+      });
+    } catch (e) {}
   },
 
   // 格式化文本，自然换行（不强制分段）
@@ -1977,6 +2251,11 @@ Page({
           current: detail, // 当前显示图片的链接
           urls: [detail], // 需要预览的图片链接列表
         });
+        // 清理二维码临时文件（若存在）
+        if (this.qrTempPath) {
+          this.cleanupTempFile(this.qrTempPath);
+          this.qrTempPath = null;
+        }
       },
       fail: (err) => {
         console.error("保存失败:", err);
@@ -2025,6 +2304,11 @@ Page({
       icon: "error",
       duration: 3000,
     });
+    // 失败时也尝试清理二维码临时文件
+    if (this.qrTempPath) {
+      this.cleanupTempFile(this.qrTempPath);
+      this.qrTempPath = null;
+    }
   },
 
   // 点击星星评分
@@ -2351,39 +2635,8 @@ Page({
 
   // 持久化图片文件
   persistImageFile(tempFilePath, resolve) {
-    try {
-      const fs = wx.getFileSystemManager();
-      const ext = (tempFilePath.split(".").pop() || "png").split("?")[0];
-      const target = `${
-        wx.env.USER_DATA_PATH
-      }/poster_img_${Date.now()}_${Math.floor(Math.random() * 1e6)}.${ext}`;
-
-      fs.readFile({
-        filePath: tempFilePath,
-        success: (readRes) => {
-          fs.writeFile({
-            filePath: target,
-            data: readRes.data,
-            encoding: "binary",
-            success: () => {
-              console.log("ensureLocalImage: 持久化到本地成功", target);
-              resolve(target);
-            },
-            fail: (e) => {
-              console.log("ensureLocalImage: 写入失败，回退temp", e);
-              resolve(tempFilePath);
-            },
-          });
-        },
-        fail: (e) => {
-          console.log("ensureLocalImage: 读取失败，回退temp", e);
-          resolve(tempFilePath);
-        },
-      });
-    } catch (e) {
-      console.log("ensureLocalImage: 持久化异常，回退temp", e);
-      resolve(tempFilePath);
-    }
+    // 避免占用持久空间，直接使用 downloadFile 返回的临时文件路径
+    resolve(tempFilePath);
   },
 
   // 获取图片信息的通用方法

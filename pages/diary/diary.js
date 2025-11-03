@@ -1054,6 +1054,11 @@ Page({
           duration: 2000,
         });
 
+        // 立即更新本地可见性为已发布，切换按钮样式与文案
+        this.setData({
+          "result.visibility": 1,
+        });
+
         // 可以在这里添加其他成功后的处理，比如跳转到社区页面
         setTimeout(() => {
           wx.navigateTo({
@@ -1555,7 +1560,11 @@ Page({
                   filePath,
                   data: res.data,
                   encoding: "binary",
-                  success: () => resolve(filePath),
+                  success: () => {
+                    // 记录二维码文件路径以便生成后清理
+                    this.qrTempPath = filePath;
+                    resolve(filePath);
+                  },
                   fail: (e) => {
                     console.warn("写入二维码失败:", e);
                     resolve(null);
@@ -1580,6 +1589,15 @@ Page({
       console.error("获取小程序码失败:", error);
       return null;
     }
+  },
+
+  // 清理临时文件
+  cleanupTempFile(filePath) {
+    try {
+      if (!filePath) return;
+      const fs = wx.getFileSystemManager();
+      fs.unlink({ filePath, success: () => {}, fail: () => {} });
+    } catch (e) {}
   },
 
   // 格式化文本，自然换行（不强制分段）
@@ -1741,6 +1759,11 @@ Page({
           current: detail, // 当前显示图片的链接
           urls: [detail], // 需要预览的图片链接列表
         });
+        // 清理二维码临时文件（若存在）
+        if (this.qrTempPath) {
+          this.cleanupTempFile(this.qrTempPath);
+          this.qrTempPath = null;
+        }
       },
       fail: (err) => {
         console.error("保存失败:", err);
@@ -2451,6 +2474,11 @@ Page({
           current: path,
           urls: [path],
         });
+        // 清理二维码临时文件（若存在）
+        if (this.qrTempPath) {
+          this.cleanupTempFile(this.qrTempPath);
+          this.qrTempPath = null;
+        }
       },
       fail: (err) => {
         console.error("保存失败:", err);

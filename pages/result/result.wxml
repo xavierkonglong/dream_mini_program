@@ -1,6 +1,6 @@
 <!--结果页-->
 <view class="container">
-  
+
   <!-- 顶部导航栏 -->
   <!-- <view class="header">
     <view class="nav-icon" bindtap="onBackHome">
@@ -45,12 +45,7 @@
       <view class="section-title">{{i18n.result.dreamAnalysis}}</view>
       <view class="cloud-card analysis-card">
         <view class="analysis-content">
-          <view 
-            class="analysis-paragraph" 
-            wx:for="{{result.interpretationParagraphs}}" 
-            wx:key="index"
-            user-select="{{true}}"
-          >
+          <view class="analysis-paragraph" wx:for="{{result.interpretationParagraphs}}" wx:key="index" user-select="{{true}}">
             {{item}}
           </view>
         </view>
@@ -67,51 +62,27 @@
         <view class="questions-intro">
           <text class="intro-text">{{i18n.result.questionsIntro}}</text>
         </view>
-        
+
         <!-- 引导问题折叠面板 -->
         <van-collapse value="{{activeNames}}" bind:change="onCollapseChange" wx:if="{{result.guidingQuestion1 || result.guidingQuestion2}}">
           <!-- 问题一 -->
-          <van-collapse-item 
-            name="question1" 
-            title="{{i18n.result.question1}}" 
-            wx:if="{{result.guidingQuestion1}}"
-            custom-class="question-collapse-item"
-          >
+          <van-collapse-item name="question1" title="{{i18n.result.question1}}" wx:if="{{result.guidingQuestion1}}" custom-class="question-collapse-item">
             <view class="question-content">
               <text class="question-text" user-select="{{true}}">{{result.guidingQuestion1}}</text>
             </view>
             <view class="answer-container" wx:if="{{!result.guidingQuestion1Answer}}">
-              <textarea 
-                class="answer-textarea"
-                placeholder="{{i18n.result.answerPlaceholder}}"
-                value="{{answer1}}"
-                bindinput="onAnswer1Input"
-                maxlength="500"
-                show-confirm-bar="{{false}}"
-              ></textarea>
+              <textarea class="answer-textarea" placeholder="{{i18n.result.answerPlaceholder}}" value="{{answer1}}" bindinput="onAnswer1Input" maxlength="500" show-confirm-bar="{{false}}"></textarea>
               <view class="char-count">{{answer1.length}}/500</view>
             </view>
           </van-collapse-item>
 
           <!-- 问题二 -->
-          <van-collapse-item 
-            name="question2" 
-            title="{{i18n.result.question2}}" 
-            wx:if="{{result.guidingQuestion2}}"
-            custom-class="question-collapse-item"
-          >
+          <van-collapse-item name="question2" title="{{i18n.result.question2}}" wx:if="{{result.guidingQuestion2}}" custom-class="question-collapse-item">
             <view class="question-content">
               <text class="question-text" user-select="{{true}}">{{result.guidingQuestion2}}</text>
             </view>
             <view class="answer-container" wx:if="{{!result.guidingQuestion2Answer}}">
-              <textarea 
-                class="answer-textarea"
-                placeholder="{{i18n.result.answerPlaceholder}}"
-                value="{{answer2}}"
-                bindinput="onAnswer2Input"
-                maxlength="500"
-                show-confirm-bar="{{false}}"
-              ></textarea>
+              <textarea class="answer-textarea" placeholder="{{i18n.result.answerPlaceholder}}" value="{{answer2}}" bindinput="onAnswer2Input" maxlength="500" show-confirm-bar="{{false}}"></textarea>
               <view class="char-count">{{answer2.length}}/500</view>
             </view>
           </van-collapse-item>
@@ -119,11 +90,7 @@
 
         <!-- 保存回答按钮 -->
         <view class="save-answers-container" wx:if="{{(!result.guidingQuestion1Answer && answer1) || (!result.guidingQuestion2Answer && answer2)}}">
-          <button 
-            class="save-answers-btn {{savingAnswers ? 'saving' : ''}}"
-            bindtap="onSaveAnswers"
-            disabled="{{savingAnswers}}"
-          >
+          <button class="save-answers-btn {{savingAnswers ? 'saving' : ''}}" bindtap="onSaveAnswers" disabled="{{savingAnswers}}">
             <text wx:if="{{!savingAnswers}}">{{i18n.result.saveAnswers}}</text>
             <text wx:else>{{i18n.result.saving}}</text>
           </button>
@@ -132,10 +99,13 @@
     </view>
 
     <!-- AI梦境图像（仅文生图模式） -->
-    <view class="image-section" wx:if="{{!isVideoType && result.imageUrl}}">
+    <view class="image-section" wx:if="{{!isVideoType && (result.imageUrl || imageLoading)}}">
       <view class="section-title">{{i18n.result.aiImage}}</view>
       <view class="image-container">
-        <image class="dream-image" src="{{result.imageUrl}}" mode="aspectFill" bindtap="onPreviewImage" />
+        <view class="image-loading" wx:if="{{imageLoading && !result.imageUrl}}">
+          <van-loading type="spinner" size="32px" color="#8B5CF6">{{i18n.result.loading}}</van-loading>
+        </view>
+        <image wx:elif="{{result.imageUrl}}" class="dream-image" src="{{result.imageUrl}}" mode="aspectFill" bindtap="onPreviewImage" />
       </view>
       <view class="image-description" wx:if="{{result.imagePrompt}}">
         <text class="description-text" user-select="{{true}}">{{result.imagePrompt}}</text>
@@ -144,19 +114,21 @@
 
     <!-- AI梦境视频（仅文生视频模式） -->
     <view class="video-section" wx:if="{{isVideoType}}">
-      <view class="section-title">{{i18n.result.aiVideo}}</view>
-      
+      <view class="section-title">{{i18n.result.aiDreamVideo}}</view>
+
       <!-- 视频生成中状态 -->
-      <view class="video-status-container" wx:if="{{videoStatus === 1}}">
+      <view class="video-status-container" wx:if="{{videoStatus === 'processing' || videoStatus === 'pending'}}">
         <view class="cloud-card video-status-card">
-          <view class="status-icon">⏳</view>
+          <view class="status-icon">
+            <van-loading type="spinner" size="32px" color="#8B5CF6" />
+          </view>
           <view class="status-text">{{i18n.result.videoGenerating}}</view>
           <view class="status-tip">{{i18n.result.videoGeneratingTip}}</view>
         </view>
       </view>
 
       <!-- 视频生成失败状态 -->
-      <view class="video-status-container" wx:if="{{videoStatus === 3}}">
+      <view class="video-status-container" wx:if="{{videoStatus === 'failed'}}">
         <view class="cloud-card video-status-card">
           <view class="status-icon">❌</view>
           <view class="status-text">{{i18n.result.videoFailed}}</view>
@@ -165,16 +137,9 @@
       </view>
 
       <!-- 视频播放器 -->
-      <view class="video-container" wx:if="{{videoStatus === 2 && videoUrl}}">
-        <video 
-          class="dream-video"
-          src="{{videoUrl}}"
-          controls
-          show-center-play-btn
-          enable-play-gesture
-          object-fit="contain"
-        ></video>
-        
+      <view class="video-container" wx:if="{{videoStatus === 'completed' && videoUrl}}">
+        <video class="dream-video" src="{{videoUrl}}" controls show-center-play-btn enable-play-gesture object-fit="contain"></video>
+
         <!-- 视频操作按钮 -->
         <view class="video-actions">
           <button class="video-action-btn download-btn" bindtap="onDownloadVideo">
@@ -182,7 +147,7 @@
             <text class="action-text">{{i18n.result.downloadVideo}}</text>
           </button>
         </view>
-        
+
         <!-- 视频提示词描述 -->
         <view class="video-description" wx:if="{{result.videoPrompt}}">
           <text class="description-text" user-select="{{true}}">{{result.videoPrompt}}</text>
@@ -192,11 +157,11 @@
 
     <!-- 发布/海报 按钮横排 -->
     <view class="actions-section" wx:if="{{result}}">
-      <button class="action-btn publish-button small" wx:if="{{result.analysisId && isLoggedIn}}" bindtap="onPublishToCommunity">
+      <button class="action-btn publish-button small" wx:if="{{result.analysisId && isLoggedIn}}" bindtap="onTogglePublishOrPrivate">
         <text class="publish-icon">📤</text>
-        <text class="publish-text">{{i18n.result.publish}}</text>
+        <text class="publish-text">{{result.visibility === 1 ? i18n.result.setToPrivate : i18n.result.publish}}</text>
       </button>
-      <button class="action-btn poster-button small" bindtap="onGeneratePoster">
+      <button class="action-btn poster-button small" bindtap="onGeneratePoster" wx:if="{{(!isVideoType && !imageLoading && result.imageUrl) || (isVideoType && videoStatus === 'completed' && videoUrl)}}">
         <text class="poster-icon">🎨</text>
         <text class="poster-text">{{i18n.result.generatePoster}}</text>
       </button>
@@ -212,44 +177,27 @@
           <view class="rating-container">
             <text class="rating-label">{{i18n.result.ratingLabel}}</text>
             <view class="stars-container">
-              <view 
-                class="star {{index < feedbackRating ? 'active' : ''}}" 
-                wx:for="{{[1,2,3,4,5]}}" 
-                wx:key="index"
-                data-rating="{{index + 1}}"
-                bindtap="onStarTap"
-              >
+              <view class="star {{index < feedbackRating ? 'active' : ''}}" wx:for="{{[1,2,3,4,5]}}" wx:key="index" data-rating="{{index + 1}}" bindtap="onStarTap">
                 {{index < feedbackRating ? '⭐' : '☆'}}
               </view>
             </view>
             <text class="rating-text">{{feedbackRating > 0 ? feedbackRating + i18n.result.score : i18n.result.selectRating}}</text>
           </view>
-          
+
           <!-- 反馈输入框 -->
           <view class="feedback-input-container">
             <text class="feedback-label">{{i18n.result.feedbackLabel}}</text>
-            <textarea 
-              class="feedback-textarea"
-              placeholder="{{i18n.result.feedbackPlaceholder}}"
-              value="{{feedbackContent}}"
-              bindinput="onFeedbackInput"
-              maxlength="1000"
-              show-confirm-bar="{{false}}"
-            ></textarea>
+            <textarea class="feedback-textarea" placeholder="{{i18n.result.feedbackPlaceholder}}" value="{{feedbackContent}}" bindinput="onFeedbackInput" maxlength="1000" show-confirm-bar="{{false}}"></textarea>
             <view class="char-count">{{feedbackContent.length}}/1000</view>
           </view>
-          
+
           <!-- 提交按钮 -->
-          <button 
-            class="feedback-submit-btn {{submittingFeedback ? 'submitting' : ''}}"
-            bindtap="onSubmitFeedback"
-            disabled="{{submittingFeedback}}"
-          >
+          <button class="feedback-submit-btn {{submittingFeedback ? 'submitting' : ''}}" bindtap="onSubmitFeedback" disabled="{{submittingFeedback}}">
             <text wx:if="{{!submittingFeedback}}">{{i18n.result.submitFeedback}}</text>
             <text wx:else>{{i18n.result.submitting}}</text>
           </button>
         </view>
-        
+
         <!-- 感谢信息 -->
         <view class="thank-you-container" wx:if="{{feedbackSubmitted}}">
           <view class="thank-you-icon">🙏</view>
@@ -268,37 +216,14 @@
     </view>
   </view>
 
-  <!-- poster组件用于海报生成 -->
-  <poster 
-    id="poster" 
-    config="{{posterConfig}}"
-    bind:success="onPosterSuccess" 
-    bind:fail="onPosterFail"
-    style="position: fixed; top: -9999rpx; left: -9999rpx; width: 0rpx; height: 0rpx; opacity: 0;"
-  >
-  </poster>
+  
 
   <!-- Painter组件用于海报生成 -->
-  <painter 
-    customStyle="position: absolute; left: -9999rpx; top: -9999rpx;" 
-    palette="{{painterPalette}}" 
-    bind:imgOK="onPainterImgOK" 
-    bind:imgErr="onPainterImgErr" 
-    widthPixels="1000" 
-  />
-  
-  <!-- 隐藏的canvas用于视频封面生成 -->
-  <canvas 
-    id="video-canvas" 
-    type="2d" 
-    style="position: fixed; top: -9999rpx; left: -9999rpx; width: 0rpx; height: 0rpx; opacity: 0;"
-  ></canvas>
-  
-  <!-- 个人信息设置弹窗 -->
-  <profile-setup-modal 
-    show="{{showProfileSetupModal}}"
-    bind:setupComplete="onProfileSetupComplete"
-    bind:close="onCloseProfileSetupModal"
-  />
-</view>
+  <painter customStyle="position: absolute; left: -9999rpx; top: -9999rpx;" palette="{{painterPalette}}" bind:imgOK="onPainterImgOK" bind:imgErr="onPainterImgErr" widthPixels="1000" />
 
+  <!-- 隐藏的canvas用于视频封面生成 -->
+  <canvas id="video-canvas" type="2d" style="position: fixed; top: -9999rpx; left: -9999rpx; width: 0rpx; height: 0rpx; opacity: 0;"></canvas>
+
+  <!-- 个人信息设置弹窗 -->
+  <profile-setup-modal show="{{showProfileSetupModal}}" bind:setupComplete="onProfileSetupComplete" bind:close="onCloseProfileSetupModal" />
+</view>

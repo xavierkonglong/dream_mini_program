@@ -7,7 +7,8 @@
     "pages/profile/edit-profile",
     "pages/result/result",
     "pages/result/post-detail",
-    "pages/diary/diary"
+    "pages/diary/diary",
+    "pages/checkin/checkin"
   ],
   "window": {
     "navigationBarTitleText": "梦境解析",

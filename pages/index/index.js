@@ -1,6 +1,7 @@
 // 首页
 const { IMAGE_URLS } = require("../../constants/index.js");
 const authService = require("../../services/auth.js");
+const storage = require("../../utils/storage.js");
 const { t, getLang, setLanguage } = require("../../utils/i18n.js");
 
 Page({
@@ -135,6 +136,10 @@ Page({
 
     // 检查登录状态
     if (!authService.isUserLoggedIn()) {
+      // 在弹出登录前，保存当前输入为草稿，避免登录流程导致内容丢失
+      storage.set('draft.dreamDescription', dreamDescription);
+      storage.set('draft.isPublic', isPublic);
+      storage.set('draft.generationType', generationType);
       this.setData({
         showLoginModal: true,
       });
@@ -205,14 +210,30 @@ Page({
 
       console.log("解析响应:", response);
 
-      // 检查响应格式
-      if (response && response.code === 0 && response.data) {
+      // 兼容新老结构：优先取旧结构的 data，否则取扁平对象
+      const raw = response && response.code === 0 && response.data ? response.data : response;
+
+      // 基本有效性校验（至少需要有 analysisId/analysis_id）
+      if (raw && (raw.analysisId || raw.analysis_id)) {
         // 完成进度条动画
         this.completeProgressAnimation();
 
-        // 添加生成类型标识
+        // 归一化字段到 camelCase，并附加生成类型
         const resultData = {
-          ...response.data,
+          analysisId: raw.analysisId || raw.analysis_id,
+          dreamDescription: raw.dreamDescription || raw.dream_description || "",
+          keywords: raw.keywords || [],
+          interpretation: raw.interpretation || "",
+          imagePrompt: raw.imagePrompt || raw.image_prompt || "",
+          imageTaskId: raw.imageTaskId || raw.image_task_id || "",
+          imageStatus: raw.imageStatus || raw.image_status || "",
+          imageUrl: raw.imageUrl || raw.image_url || null,
+          guidingQuestionsJson:
+            raw.guidingQuestionsJson || raw.guiding_questions_json || "",
+          // 视频相关（仅在视频模式时有值）
+          videoPrompt: raw.videoPrompt || raw.video_prompt || null,
+          videoStatus: raw.videoStatus || raw.video_status || null,
+          videoUrl: raw.videoUrl || raw.video_url || null,
           generationType: generationType,
         };
 
@@ -227,6 +248,10 @@ Page({
           this.setData({
             dreamDescription: "",
           });
+          // 清理草稿
+          storage.remove('draft.dreamDescription');
+          storage.remove('draft.isPublic');
+          storage.remove('draft.generationType');
           wx.navigateTo({
             url: `/pages/result/result?data=${encodeURIComponent(
               JSON.stringify(resultData)
@@ -246,6 +271,10 @@ Page({
       this.setData({
         dreamDescription: "",
       });
+      // 清理草稿
+      storage.remove('draft.dreamDescription');
+      storage.remove('draft.isPublic');
+      storage.remove('draft.generationType');
       wx.showToast({
         title: error.message || "解析失败，请重试",
         icon: "error",
@@ -261,6 +290,8 @@ Page({
     this.setData({
       dreamDescription: "",
     });
+    // 同步清理草稿
+    storage.remove('draft.dreamDescription');
   },
 
   // 开始进度条动画
@@ -346,6 +377,17 @@ Page({
       });
     } else {
       console.log("非首次登录，直接开始解析梦境");
+      // 恢复草稿（若输入为空）
+      const draftDesc = storage.get('draft.dreamDescription');
+      const draftPublic = storage.get('draft.isPublic');
+      const draftGenType = storage.get('draft.generationType');
+      if (!this.data.dreamDescription && draftDesc) {
+        this.setData({
+          dreamDescription: draftDesc,
+          isPublic: typeof draftPublic === 'number' ? draftPublic : this.data.isPublic,
+          generationType: draftGenType || this.data.generationType,
+        });
+      }
       // 非首次登录，直接开始解析梦境
       this.onAnalyzeDream();
     }
@@ -354,6 +396,17 @@ Page({
   // 个人信息设置完成回调
   onProfileSetupComplete(e) {
     console.log("个人信息设置完成", e.detail);
+    // 恢复草稿（若输入为空）
+    const draftDesc = storage.get('draft.dreamDescription');
+    const draftPublic = storage.get('draft.isPublic');
+    const draftGenType = storage.get('draft.generationType');
+    if (!this.data.dreamDescription && draftDesc) {
+      this.setData({
+        dreamDescription: draftDesc,
+        isPublic: typeof draftPublic === 'number' ? draftPublic : this.data.isPublic,
+        generationType: draftGenType || this.data.generationType,
+      });
+    }
     // 设置完成后开始解析梦境
     this.onAnalyzeDream();
   },
@@ -435,6 +488,15 @@ Page({
     // 通过页面数据变化来触发登录弹窗更新
     this.setData({
       language: this.data.language,
+    });
+  },
+
+  /**
+   * 跳转到签到页面
+   */
+  goToCheckin() {
+    wx.navigateTo({
+      url: '/pages/checkin/checkin'
     });
   },
 });

@@ -1,0 +1,70 @@
+<!--积分任务签到页面-->
+<view class="checkin-container">
+  <!-- 积分规则提示 -->
+  <view class="rules-hint" bindtap="showRules">
+    <text class="question-icon">?</text>
+    <text class="rules-text">积分规则</text>
+  </view>
+
+  <!-- 签到区域 -->
+  <view class="checkin-section">
+    <view class="checkin-circle">
+      <view class="circle-bg"></view>
+      <view class="circle-content">
+        <text class="checkin-label">已连续签到</text>
+        <view class="checkin-days">
+          <text class="days-number">{{checkinDays}}</text>
+          <text class="days-unit">天</text>
+        </view>
+      </view>
+    </view>
+    <button class="checkin-btn {{isCheckedIn ? 'checked-in' : ''}}" bindtap="handleCheckin" disabled="{{isCheckedIn}}">
+      {{isCheckedIn ? '今日已签到' : '立即签到'}}
+    </button>
+    <view class="tomorrow-reward">
+      <text class="reward-icon">✨</text>
+      <text class="reward-text">明日签到 +{{tomorrowReward}} 积分</text>
+    </view>
+  </view>
+
+  <!-- 积分摘要 -->
+  <view class="points-summary">
+    <view class="points-item">
+      <view class="points-icon today">
+        <text class="icon-text">↑</text>
+      </view>
+      <text class="points-label">今日积分</text>
+      <text class="points-value">{{todayPoints}}</text>
+    </view>
+    <view class="points-item">
+      <view class="points-icon total">
+        <text class="icon-text">⭐</text>
+      </view>
+      <text class="points-label">我的积分</text>
+      <text class="points-value">{{totalPoints}}</text>
+    </view>
+  </view>
+
+  <!-- 任务列表 -->
+  <view class="tasks-section">
+    <view class="tasks-title">做任务领积分</view>
+    <view class="task-list">
+      <view class="task-card" wx:for="{{taskList}}" wx:key="id">
+        <view class="task-icon-wrapper">
+          <view class="task-icon {{item.iconClass}}">
+            <text class="task-icon-emoji">{{item.iconEmoji}}</text>
+          </view>
+        </view>
+        <view class="task-content">
+          <view class="task-title">{{item.title}}</view>
+          <view class="task-desc">{{item.desc}}</view>
+          <view class="task-points">{{item.points}}</view>
+        </view>
+        <button class="task-btn {{item.completed ? 'completed' : ''}}" bindtap="handleTask" data-id="{{item.id}}" disabled="{{item.completed}}">
+          {{item.completed ? '已绑定 >' : item.buttonText}}
+        </button>
+      </view>
+    </view>
+  </view>
+</view>
+
