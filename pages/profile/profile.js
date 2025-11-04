@@ -2,7 +2,6 @@
 const authService = require("../../services/auth.js");
 const userService = require("../../services/user.js");
 const http = require("../../services/http.js");
-const logger = require("../../utils/logger.js");
 const { IMAGE_URLS } = require("../../constants/index.js");
 const { t, getLang, setLanguage } = require("../../utils/i18n.js");
 
@@ -22,13 +21,27 @@ Page({
     imageUrls: IMAGE_URLS,
     language: "zh", // 语言设置
     i18n: {}, // 国际化文本
+    // 梦境日记分页相关
+    diaryPageNum: 0, // 当前页码，从0开始
+    diaryPageSize: 20, // 每页数量
+    diaryHasMore: true, // 是否还有更多数据
+    diaryLoading: false, // 是否正在加载
+    // 收藏分页相关
+    collectionPageNum: 0, // 当前页码，从0开始
+    collectionPageSize: 20, // 每页数量
+    collectionHasMore: true, // 是否还有更多数据
+    collectionLoading: false, // 是否正在加载
+    // 点赞分页相关
+    likesPageNum: 0, // 当前页码，从0开始
+    likesPageSize: 20, // 每页数量
+    likesHasMore: true, // 是否还有更多数据
+    likesLoading: false, // 是否正在加载
   },
 
   /**
    * 生命周期函数--监听页面加载
    */
   onLoad(options) {
-    console.log("我的页面加载");
     this.initI18n();
     this.checkLoginStatus();
 
@@ -37,8 +50,10 @@ Page({
 
     // 监听语言变化事件
     this.onLanguageChanged = (newLanguage) => {
-      console.log("我的页面收到语言变化事件:", newLanguage);
       this.initI18n();
+      
+      // 重新格式化时间，确保语言切换后时间格式也更新
+      this.refreshTimeFormats();
     };
     wx.eventBus && wx.eventBus.on("languageChanged", this.onLanguageChanged);
   },
@@ -74,6 +89,13 @@ Page({
           noLikesDesc: t("profile.noLikesDesc"),
           welcomeTitle: t("profile.welcomeTitle"),
           welcomeSubtitle: t("profile.welcomeSubtitle"),
+          loadFailed: t("profile.loadFailed"),
+            noMore: t("profile.noMore"),
+            pullUpToLoadMore: t("profile.pullUpToLoadMore"),
+          loading: t("profile.loading"),
+          jumpFailed: t("profile.jumpFailed"),
+          loadMoreFailed: t("profile.loadMoreFailed"),
+          postIdNotFound: t("profile.postIdNotFound"),
         },
         app: {
           shareTitle: t("app.shareTitle"),
@@ -109,7 +131,6 @@ Page({
    * 生命周期函数--监听页面初次渲染完成
    */
   onReady() {
-    console.log("我的页面渲染完成");
   },
 
   /**
@@ -119,7 +140,6 @@ Page({
     // 强制更新标题
     this.initI18n();
     const newTitle = t("pageTitle.profile");
-    console.log("个人页设置新标题:", newTitle);
     wx.setNavigationBarTitle({
       title: newTitle,
     });
@@ -132,15 +152,8 @@ Page({
     this.listenToUnauthorized();
 
     if (this.data.isLoggedIn) {
-      // 只有在当前标签页是diary且没有数据时才重新加载
-      if (
-        this.data.activeTab === "diary" &&
-        this.data.dreamDiaryList.length === 0
-      ) {
-        this.loadCurrentTabData();
-      } else if (this.data.activeTab !== "diary") {
-        this.loadCurrentTabData();
-      }
+      // 每次进入页面时，如果已登录，都加载当前选中标签页的数据
+      this.loadCurrentTabData();
     }
   },
 
@@ -148,14 +161,12 @@ Page({
    * 生命周期函数--监听页面隐藏
    */
   onHide() {
-    console.log("我的页面隐藏");
   },
 
   /**
    * 生命周期函数--监听页面卸载
    */
   onUnload() {
-    console.log("我的页面卸载");
     // 移除事件监听
     wx.eventBus && wx.eventBus.off("unauthorized", this.handleUnauthorized);
   },
@@ -175,7 +186,6 @@ Page({
    * 处理401未授权事件
    */
   handleUnauthorized(data) {
-    console.log("收到401未授权事件，显示登录弹窗");
     this.setData({
       showLoginModal: true,
     });
@@ -208,17 +218,40 @@ Page({
     const isLoggedIn = authService.checkLoginStatus();
     const userInfo = authService.getCurrentUser();
 
-    // 格式化创建时间
+    // 格式化创建时间，但保存原始时间字符串用于语言切换
     if (userInfo && userInfo.createTime) {
-      userInfo.createTime = this.formatCreateTime(userInfo.createTime);
+      // 如果还没有保存原始时间，保存它
+      if (!userInfo._originalCreateTime) {
+        // 检查是否是已经格式化的时间（包含"年"或月份缩写）
+        const isFormatted = userInfo.createTime.includes("年") || 
+                           userInfo.createTime.includes("月") ||
+                           /(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)/.test(userInfo.createTime);
+        if (!isFormatted) {
+          // 是原始时间字符串，保存它
+          userInfo._originalCreateTime = userInfo.createTime;
+        } else {
+          // 已经是格式化后的时间，尝试从 storage 获取原始时间
+          const storage = require("../../utils/storage.js");
+          const rawUserInfo = storage.get("userInfo");
+          if (rawUserInfo && rawUserInfo.createTime) {
+            const rawIsFormatted = rawUserInfo.createTime.includes("年") || 
+                                  rawUserInfo.createTime.includes("月") ||
+                                  /(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)/.test(rawUserInfo.createTime);
+            if (!rawIsFormatted) {
+              userInfo._originalCreateTime = rawUserInfo.createTime;
+            }
+          }
+        }
+      }
+      // 使用原始时间字符串格式化（如果存在）
+      const timeToFormat = userInfo._originalCreateTime || userInfo.createTime;
+      userInfo.createTime = this.formatCreateTime(timeToFormat);
     }
 
     this.setData({
       isLoggedIn: isLoggedIn,
       userInfo: userInfo,
     });
-
-    console.log("登录状态检查:", { isLoggedIn, userInfo });
   },
 
   /**
@@ -234,11 +267,8 @@ Page({
    * 登录成功回调
    */
   onLoginSuccess(e) {
-    console.log("登录成功", e.detail);
-
     // 检查是否是首次登录
     if (e.detail.isFirstLogin) {
-      console.log("首次登录，显示个人信息设置弹窗");
       this.setData({
         showProfileSetupModal: true,
         showLoginModal: false,
@@ -269,7 +299,6 @@ Page({
    * 个人信息设置完成回调
    */
   onProfileSetupComplete(e) {
-    console.log("个人信息设置完成", e.detail);
     // 设置完成后正常处理登录成功
     this.handleLoginSuccess();
   },
@@ -287,7 +316,6 @@ Page({
    * 登录取消回调
    */
   onLoginCancel() {
-    console.log("用户取消登录");
     this.setData({
       showLoginModal: false,
     });
@@ -328,7 +356,6 @@ Page({
    */
   onTabChange(e) {
     const { tab } = e.currentTarget.dataset;
-    console.log("切换标签:", tab);
 
     this.setData({
       activeTab: tab,
@@ -359,9 +386,18 @@ Page({
    * 下拉刷新
    */
   onPullDownRefresh() {
-    console.log("下拉刷新我的梦境日记");
-    if (this.data.activeTab === "diary") {
+    const activeTab = this.data.activeTab;
+    
+    if (activeTab === "diary") {
       this.loadDreamDiary().then(() => {
+        wx.stopPullDownRefresh();
+      });
+    } else if (activeTab === "collection") {
+      this.loadCollection().then(() => {
+        wx.stopPullDownRefresh();
+      });
+    } else if (activeTab === "likes") {
+      this.loadLikes().then(() => {
         wx.stopPullDownRefresh();
       });
     } else {
@@ -370,17 +406,63 @@ Page({
   },
 
   /**
-   * 加载梦境日记
+   * 页面上拉触底事件的处理函数
    */
-  async loadDreamDiary() {
+  onReachBottom() {
+    if (!this.data.isLoggedIn) {
+      return;
+    }
+
+    // 根据当前标签页触发对应的加载更多
+    if (this.data.activeTab === "diary") {
+      if (!this.data.diaryLoading && this.data.diaryHasMore) {
+        this.loadDreamDiary(true);
+      }
+    } else if (this.data.activeTab === "collection") {
+      if (!this.data.collectionLoading && this.data.collectionHasMore) {
+        this.loadCollection(true);
+      }
+    } else if (this.data.activeTab === "likes") {
+      if (!this.data.likesLoading && this.data.likesHasMore) {
+        this.loadLikes(true);
+      }
+    }
+  },
+
+  /**
+   * 加载梦境日记
+   * @param {boolean} loadMore - 是否为加载更多（追加数据）
+   */
+  async loadDreamDiary(loadMore = false) {
+    // 如果正在加载，直接返回
+    if (this.data.diaryLoading) {
+      return;
+    }
+
+    // 如果是加载更多，但没有更多数据了，直接返回
+    if (loadMore && !this.data.diaryHasMore) {
+      return;
+    }
+
+    // 如果不是加载更多，重置分页状态
+    if (!loadMore) {
+      this.setData({
+        diaryPageNum: 0,
+        diaryHasMore: true,
+        dreamDiaryList: [],
+      });
+    }
+
+    this.setData({ diaryLoading: true });
+
     try {
-      console.log("开始加载我的梦境日记");
+      const currentPageNum = loadMore ? this.data.diaryPageNum + 1 : 0;
 
       const response = await http.get(
         "/dream/posts/diary/my",
         {
-          pageNum: 0,
-          pageSize: 20,
+          pageNum: currentPageNum,
+          pageSize: this.data.diaryPageSize,
         },
         {
           showLoading: false,
@@ -389,10 +471,9 @@ Page({
 
       if (response && response.data && response.data.records) {
         const records = response.data.records;
-        console.log("收到梦境日记记录数:", records.length);
 
         // 处理数据，按时间降序排列
-        const dreamDiaryList = records.map((item, index) => {
+        const newRecords = records.map((item, index) => {
           const createTime = this.formatTime(item.createdAt);
 
           return {
@@ -412,52 +493,96 @@ Page({
           };
         });
 
+        // 判断是否还有更多数据
+        const hasMore = records.length >= this.data.diaryPageSize;
+        const totalRecords = response.data.total || 0;
+        const currentTotal = loadMore 
+          ? this.data.dreamDiaryList.length + newRecords.length 
+          : newRecords.length;
+        const hasMoreData = currentTotal < totalRecords || hasMore;
+
+        // 如果是加载更多，追加数据；否则替换数据
+        const dreamDiaryList = loadMore 
+          ? [...this.data.dreamDiaryList, ...newRecords]
+          : newRecords;
+
         this.setData({
           dreamDiaryList: dreamDiaryList,
+          diaryPageNum: currentPageNum,
+          diaryHasMore: hasMoreData,
+          diaryLoading: false,
         });
-
-        console.log("梦境日记加载成功，共", dreamDiaryList.length, "条记录");
       } else {
-        console.log("响应数据格式异常:", response);
         this.setData({
-          dreamDiaryList: [],
+          dreamDiaryList: loadMore ? this.data.dreamDiaryList : [],
+          diaryHasMore: false,
+          diaryLoading: false,
         });
-        console.log("暂无梦境日记");
       }
     } catch (error) {
-      console.error("加载梦境日记失败:", error);
+      this.setData({ diaryLoading: false });
 
       // 检查是否是401未授权错误，如果是则不显示toast，让全局401处理机制处理
       if (error.message === "未授权") {
-        console.log("401错误，由全局401处理机制处理，不显示toast");
         return;
       }
 
-      // 其他错误显示错误提示
-      wx.showToast({
-        title: this.data.i18n.profile.loadFailed,
-        icon: "error",
-      });
+      // 其他错误显示错误提示（仅在首次加载时显示）
+      if (!loadMore) {
+        wx.showToast({
+          title: this.data.i18n.profile.loadFailed,
+          icon: "error",
+        });
 
-      // 设置为空数组
-      this.setData({
-        dreamDiaryList: [],
-      });
+        // 设置为空数组
+        this.setData({
+          dreamDiaryList: [],
+        });
+      } else {
+        // 加载更多失败，提示用户
+        wx.showToast({
+          title: this.data.i18n.profile.loadMoreFailed,
+          icon: "none",
+          duration: 1500,
+        });
+      }
     }
   },
 
   /**
    * 加载收藏列表
+   * @param {boolean} loadMore - 是否为加载更多（追加数据）
    */
-  async loadCollection() {
+  async loadCollection(loadMore = false) {
+    // 如果正在加载，直接返回
+    if (this.data.collectionLoading) {
+      return;
+    }
+
+    // 如果是加载更多，但没有更多数据了，直接返回
+    if (loadMore && !this.data.collectionHasMore) {
+      return;
+    }
+
+    // 如果不是加载更多，重置分页状态
+    if (!loadMore) {
+      this.setData({
+        collectionPageNum: 0,
+        collectionHasMore: true,
+        collectionList: [],
+      });
+    }
+
+    this.setData({ collectionLoading: true });
+
     try {
-      console.log("开始加载我的收藏");
+      const currentPageNum = loadMore ? this.data.collectionPageNum + 1 : 0;
 
       const response = await http.get(
         "/dream/posts/my/favorites",
         {
-          pageNum: 0,
-          pageSize: 20,
+          pageNum: currentPageNum,
+          pageSize: this.data.collectionPageSize,
         },
         {
           showLoading: false,
@@ -468,7 +593,7 @@ Page({
         const records = response.data.records;
 
         // 处理数据，按时间降序排列
-        const collectionList = records.map((item, index) => {
+        const newRecords = records.map((item, index) => {
           const createTime = this.formatTime(item.createdAt);
 
           // 解析关键词JSON
@@ -478,7 +603,6 @@ Page({
               keywords = JSON.parse(item.keywordsJson);
             }
           } catch (error) {
-            console.error("解析关键词失败:", error);
             keywords = [];
           }
 
@@ -501,52 +625,96 @@ Page({
           };
         });
 
+        // 判断是否还有更多数据
+        const hasMore = records.length >= this.data.collectionPageSize;
+        const totalRecords = response.data.total || 0;
+        const currentTotal = loadMore 
+          ? this.data.collectionList.length + newRecords.length 
+          : newRecords.length;
+        const hasMoreData = currentTotal < totalRecords || hasMore;
+
+        // 如果是加载更多，追加数据；否则替换数据
+        const collectionList = loadMore 
+          ? [...this.data.collectionList, ...newRecords]
+          : newRecords;
+
         this.setData({
           collectionList: collectionList,
+          collectionPageNum: currentPageNum,
+          collectionHasMore: hasMoreData,
+          collectionLoading: false,
         });
-
-        console.log("收藏列表加载成功，共", collectionList.length, "条记录");
       } else {
-        console.log("响应数据格式异常:", response);
         this.setData({
-          collectionList: [],
+          collectionList: loadMore ? this.data.collectionList : [],
+          collectionHasMore: false,
+          collectionLoading: false,
         });
-        console.log("暂无收藏内容");
       }
     } catch (error) {
-      console.error("加载收藏列表失败:", error);
+      this.setData({ collectionLoading: false });
 
       // 检查是否是401未授权错误，如果是则不显示toast，让全局401处理机制处理
       if (error.message === "未授权") {
-        console.log("401错误，由全局401处理机制处理，不显示toast");
         return;
       }
 
-      // 其他错误显示错误提示
-      wx.showToast({
-        title: this.data.i18n.profile.loadFailed,
-        icon: "error",
-      });
+      // 其他错误显示错误提示（仅在首次加载时显示）
+      if (!loadMore) {
+        wx.showToast({
+          title: this.data.i18n.profile.loadFailed,
+          icon: "error",
+        });
 
-      // 设置为空数组
-      this.setData({
-        collectionList: [],
-      });
+        // 设置为空数组
+        this.setData({
+          collectionList: [],
+        });
+      } else {
+        // 加载更多失败，提示用户
+        wx.showToast({
+          title: this.data.i18n.profile.loadMoreFailed,
+          icon: "none",
+          duration: 1500,
+        });
+      }
     }
   },
 
   /**
    * 加载点赞列表
+   * @param {boolean} loadMore - 是否为加载更多（追加数据）
    */
-  async loadLikes() {
+  async loadLikes(loadMore = false) {
+    // 如果正在加载，直接返回
+    if (this.data.likesLoading) {
+      return;
+    }
+
+    // 如果是加载更多，但没有更多数据了，直接返回
+    if (loadMore && !this.data.likesHasMore) {
+      return;
+    }
+
+    // 如果不是加载更多，重置分页状态
+    if (!loadMore) {
+      this.setData({
+        likesPageNum: 0,
+        likesHasMore: true,
+        likesList: [],
+      });
+    }
+
+    this.setData({ likesLoading: true });
+
     try {
-      console.log("开始加载我的点赞");
+      const currentPageNum = loadMore ? this.data.likesPageNum + 1 : 0;
 
       const response = await http.get(
         "/dream/posts/my/likes",
         {
-          pageNum: 0,
-          pageSize: 20,
+          pageNum: currentPageNum,
+          pageSize: this.data.likesPageSize,
         },
         {
           showLoading: false,
@@ -555,10 +723,9 @@ Page({
 
       if (response && response.data && response.data.records) {
         const records = response.data.records;
-        console.log("收到点赞记录数:", records.length);
 
         // 处理数据，按时间降序排列
-        const likesList = records.map((item, index) => {
+        const newRecords = records.map((item, index) => {
           const createTime = this.formatTime(item.createdAt);
 
           // 解析关键词JSON
@@ -568,7 +735,6 @@ Page({
               keywords = JSON.parse(item.keywordsJson);
             }
           } catch (error) {
-            console.error("解析关键词失败:", error);
             keywords = [];
           }
 
@@ -591,37 +757,59 @@ Page({
           };
         });
 
+        // 判断是否还有更多数据
+        const hasMore = records.length >= this.data.likesPageSize;
+        const totalRecords = response.data.total || 0;
+        const currentTotal = loadMore 
+          ? this.data.likesList.length + newRecords.length 
+          : newRecords.length;
+        const hasMoreData = currentTotal < totalRecords || hasMore;
+
+        // 如果是加载更多，追加数据；否则替换数据
+        const likesList = loadMore 
+          ? [...this.data.likesList, ...newRecords]
+          : newRecords;
+
         this.setData({
           likesList: likesList,
+          likesPageNum: currentPageNum,
+          likesHasMore: hasMoreData,
+          likesLoading: false,
         });
-
-        console.log("点赞列表加载成功，共", likesList.length, "条记录");
       } else {
-        console.log("响应数据格式异常:", response);
         this.setData({
-          likesList: [],
+          likesList: loadMore ? this.data.likesList : [],
+          likesHasMore: false,
+          likesLoading: false,
         });
-        console.log("暂无点赞内容");
       }
     } catch (error) {
-      console.error("加载点赞列表失败:", error);
+      this.setData({ likesLoading: false });
 
       // 检查是否是401未授权错误，如果是则不显示toast，让全局401处理机制处理
       if (error.message === "未授权") {
-        console.log("401错误，由全局401处理机制处理，不显示toast");
         return;
       }
 
-      // 其他错误显示错误提示
-      wx.showToast({
-        title: this.data.i18n.profile.loadFailed,
-        icon: "error",
-      });
+      // 其他错误显示错误提示（仅在首次加载时显示）
+      if (!loadMore) {
+        wx.showToast({
+          title: this.data.i18n.profile.loadFailed,
+          icon: "error",
+        });
 
-      // 设置为空数组
-      this.setData({
-        likesList: [],
-      });
+        // 设置为空数组
+        this.setData({
+          likesList: [],
+        });
+      } else {
+        // 加载更多失败，提示用户
+        wx.showToast({
+          title: this.data.i18n.profile.loadMoreFailed,
+          icon: "none",
+          duration: 1500,
+        });
+      }
     }
   },
 
@@ -630,12 +818,31 @@ Page({
    */
   onViewDream(e) {
     const { id } = e.currentTarget.dataset;
-    console.log("查看梦境详情:", id);
 
     if (id) {
+      // 显示加载提示
+      wx.showLoading({
+        title: this.data.i18n.profile.loading,
+        mask: true,
+      });
+
       // 直接跳转到diary页面，让diary页面调用diaryDetail接口
       wx.navigateTo({
         url: `/pages/diary/diary?postId=${id}`,
+        success: () => {
+          // 跳转成功，延迟隐藏 loading（diary 页面会自己显示 loading）
+          // 延迟 500ms 确保 diary 页面已经显示了自己的 loading
+          setTimeout(() => {
+            wx.hideLoading();
+          }, 500);
+        },
+        fail: () => {
+          wx.hideLoading();
+          wx.showToast({
+            title: this.data.i18n.profile.jumpFailed,
+            icon: "error",
+          });
+        },
       });
     } else {
       wx.showToast({
@@ -650,12 +857,31 @@ Page({
    */
   onViewCollection(e) {
     const { id } = e.currentTarget.dataset;
-    console.log("查看收藏详情:", id);
 
     if (id) {
+      // 显示加载提示
+      wx.showLoading({
+        title: this.data.i18n.profile.loading,
+        mask: true,
+      });
+
       // 直接跳转到帖子详情页，让详情页调用API获取最新数据
       wx.navigateTo({
         url: `/pages/result/post-detail?postId=${id}`,
+        success: () => {
+          // 跳转成功，post-detail 页面会在加载完成后隐藏 loading
+          // 延迟 500ms 确保 post-detail 页面已经显示了自己的 loading
+          setTimeout(() => {
+            wx.hideLoading();
+          }, 500);
+        },
+        fail: () => {
+          wx.hideLoading();
+          wx.showToast({
+            title: this.data.i18n.profile.jumpFailed,
+            icon: "error",
+          });
+        },
       });
     } else {
       wx.showToast({
@@ -670,12 +896,31 @@ Page({
    */
   onViewLike(e) {
     const { id } = e.currentTarget.dataset;
-    console.log("查看点赞详情:", id);
 
     if (id) {
+      // 显示加载提示
+      wx.showLoading({
+        title: this.data.i18n.profile.loading,
+        mask: true,
+      });
+
       // 直接跳转到帖子详情页，让详情页调用API获取最新数据
       wx.navigateTo({
         url: `/pages/result/post-detail?postId=${id}`,
+        success: () => {
+          // 跳转成功，post-detail 页面会在加载完成后隐藏 loading
+          // 延迟 500ms 确保 post-detail 页面已经显示了自己的 loading
+          setTimeout(() => {
+            wx.hideLoading();
+          }, 500);
+        },
+        fail: () => {
+          wx.hideLoading();
+          wx.showToast({
+            title: this.data.i18n.profile.jumpFailed,
+            icon: "error",
+          });
+        },
       });
     } else {
       wx.showToast({
@@ -691,7 +936,6 @@ Page({
   onLike(e) {
     e.stopPropagation(); // 阻止事件冒泡
     const { postId } = e.currentTarget.dataset;
-    console.log("点赞操作:", postId);
 
     // 这里可以添加点赞逻辑，或者直接跳转到详情页
     if (postId) {
@@ -707,7 +951,6 @@ Page({
   onFavorite(e) {
     e.stopPropagation(); // 阻止事件冒泡
     const { postId } = e.currentTarget.dataset;
-    console.log("收藏操作:", postId);
 
     // 这里可以添加收藏逻辑，或者直接跳转到详情页
     if (postId) {
@@ -721,7 +964,6 @@ Page({
    * 头像点击事件
    */
   onAvatarTap() {
-    logger.info("点击头像");
     if (!this.data.isLoggedIn) {
       this.onLogin();
       return;
@@ -743,10 +985,13 @@ Page({
   },
 
   /**
-   * 格式化时间
+   * 格式化时间（支持国际化）
    */
   formatTime(timeStr) {
-    if (!timeStr) return "刚刚";
+    if (!timeStr) {
+      const lang = getLang();
+      return lang === "en" ? "Just now" : "刚刚";
+    }
 
     // 修复iOS日期格式兼容性问题
     let date;
@@ -758,18 +1003,34 @@ Page({
         date = new Date(timeStr.replace(/-/g, "/"));
       }
     } catch (error) {
-      console.error("日期解析失败:", error);
       return timeStr;
     }
 
-    // 格式化为 YYYY年MM月DD日 HH点MM分
-    const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, "0");
-    const day = String(date.getDate()).padStart(2, "0");
-    const hour = String(date.getHours()).padStart(2, "0");
-    const minute = String(date.getMinutes()).padStart(2, "0");
+    const lang = getLang();
+    
+    if (lang === "en") {
+      // 英文格式：Nov 04, 2025 04:55
+      const months = [
+        "Jan", "Feb", "Mar", "Apr", "May", "Jun",
+        "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"
+      ];
+      const year = date.getFullYear();
+      const month = months[date.getMonth()];
+      const day = String(date.getDate()).padStart(2, "0");
+      const hour = String(date.getHours()).padStart(2, "0");
+      const minute = String(date.getMinutes()).padStart(2, "0");
+      
+      return `${month} ${day}, ${year} ${hour}:${minute}`;
+    } else {
+      // 中文格式：YYYY年MM月DD日 HH点MM分
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, "0");
+      const day = String(date.getDate()).padStart(2, "0");
+      const hour = String(date.getHours()).padStart(2, "0");
+      const minute = String(date.getMinutes()).padStart(2, "0");
 
-    return `${year}年${month}月${day}日 ${hour}点${minute}分`;
+      return `${year}年${month}月${day}日 ${hour}点${minute}分`;
+    }
   },
 
   /**
@@ -782,14 +1043,12 @@ Page({
   },
 
   /**
-   * 格式化创建时间
+   * 格式化创建时间（支持国际化）
    */
   formatCreateTime(timeStr) {
     if (!timeStr) return "";
 
     try {
-      console.log("原始时间字符串:", timeStr);
-
       // 处理ISO格式时间（包含T）
       let date;
       if (timeStr.includes("T")) {
@@ -797,25 +1056,141 @@ Page({
         // 直接使用new Date()解析ISO格式
         date = new Date(timeStr);
       } else {
-        // 其他格式
-        date = new Date(timeStr.replace(/-/g, "/"));
+        // 其他格式，如：2025-11-04 04:55:46
+        const isoTimeStr = timeStr.replace(" ", "T") + "+08:00";
+        date = new Date(isoTimeStr);
+        if (isNaN(date.getTime())) {
+          date = new Date(timeStr.replace(/-/g, "/"));
+        }
       }
 
       if (isNaN(date.getTime())) {
-        console.error("时间解析失败:", timeStr);
         return timeStr;
       }
 
+      const lang = getLang();
       const year = date.getFullYear();
       const month = date.getMonth() + 1;
 
-      const formattedTime = `${year}年${month}月`;
-      console.log("格式化后的时间:", formattedTime);
+      let formattedTime;
+      if (lang === "en") {
+        // 英文格式：Nov 2025
+        const months = [
+          "Jan", "Feb", "Mar", "Apr", "May", "Jun",
+          "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"
+        ];
+        formattedTime = `${months[month - 1]} ${year}`;
+      } else {
+        // 中文格式：YYYY年MM月
+        formattedTime = `${year}年${month}月`;
+      }
 
       return formattedTime;
     } catch (error) {
-      console.error("时间格式化失败:", error);
       return timeStr;
+    }
+  },
+
+  /**
+   * 刷新时间格式（语言切换时调用）
+   */
+  refreshTimeFormats() {
+    // 更新用户信息的创建时间
+    const userInfo = this.data.userInfo;
+    if (userInfo) {
+      // 优先使用保存的原始时间字符串
+      let originalTime = userInfo._originalCreateTime;
+      
+      // 如果没有保存原始时间，尝试从 storage 获取
+      if (!originalTime) {
+        const storage = require("../../utils/storage.js");
+        const rawUserInfo = storage.get("userInfo");
+        if (rawUserInfo && rawUserInfo.createTime) {
+          // 检查是否是原始时间字符串（不是格式化后的）
+          const isFormatted = rawUserInfo.createTime.includes("年") || 
+                             rawUserInfo.createTime.includes("月") ||
+                             /(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)/.test(rawUserInfo.createTime);
+          if (!isFormatted) {
+            originalTime = rawUserInfo.createTime;
+          }
+        }
+      }
+      
+      // 如果还是找不到原始时间，使用当前的 createTime（可能是格式化后的，需要特殊处理）
+      if (!originalTime && userInfo.createTime) {
+        // 检查当前 createTime 是否是格式化后的
+        const isFormatted = userInfo.createTime.includes("年") || 
+                           userInfo.createTime.includes("月") ||
+                           /(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)/.test(userInfo.createTime);
+        if (isFormatted) {
+          // 已经是格式化后的，无法重新格式化，跳过
+        } else {
+          originalTime = userInfo.createTime;
+        }
+      }
+      
+      // 使用原始时间字符串重新格式化
+      if (originalTime) {
+        const formattedTime = this.formatCreateTime(originalTime);
+        this.setData({
+          "userInfo.createTime": formattedTime,
+          "userInfo._originalCreateTime": originalTime, // 保存原始时间字符串
+        });
+      }
+    }
+
+    // 更新梦境日记列表的时间
+    if (this.data.dreamDiaryList && this.data.dreamDiaryList.length > 0) {
+      const updatedList = this.data.dreamDiaryList.map((item) => {
+        if (item.createdAt) {
+          const formattedTime = this.formatTime(item.createdAt);
+          return {
+            ...item,
+            date: formattedTime,
+            time: formattedTime,
+          };
+        }
+        return item;
+      });
+      this.setData({
+        dreamDiaryList: updatedList,
+      });
+    }
+
+    // 更新收藏列表的时间
+    if (this.data.collectionList && this.data.collectionList.length > 0) {
+      const updatedList = this.data.collectionList.map((item) => {
+        if (item.createdAt) {
+          const formattedTime = this.formatTime(item.createdAt);
+          return {
+            ...item,
+            date: formattedTime,
+            time: formattedTime,
+          };
+        }
+        return item;
+      });
+      this.setData({
+        collectionList: updatedList,
+      });
+    }
+
+    // 更新点赞列表的时间
+    if (this.data.likesList && this.data.likesList.length > 0) {
+      const updatedList = this.data.likesList.map((item) => {
+        if (item.createdAt) {
+          const formattedTime = this.formatTime(item.createdAt);
+          return {
+            ...item,
+            date: formattedTime,
+            time: formattedTime,
+          };
+        }
+        return item;
+      });
+      this.setData({
+        likesList: updatedList,
+      });
     }
   },
 

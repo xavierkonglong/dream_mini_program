@@ -10,7 +10,7 @@ const ENV_CONFIG = {
   // 开发环境
   dev: {
     env: 'dev',
-    baseURL: 'http://192.168.1.53:8000/api/v1',
+    baseURL: 'http://47.96.10.214:8088/dreamanalysis/api/v1',
     enableLog: true,
     enableMock: true,
     enableDebug: true,

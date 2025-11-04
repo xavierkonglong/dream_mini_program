@@ -172,7 +172,7 @@
       <view class="section-title">{{i18n.diary.rateUs}}</view>
       <view class="cloud-card feedback-card">
         <!-- 反馈表单 -->
-        <view wx:if="{{!feedbackSubmitted}}">
+        <view wx:if="{{!result.hasFeedback}}">
           <!-- 星级评分 -->
           <view class="rating-container">
             <text class="rating-label">{{i18n.diary.ratingLabel}}</text>
@@ -199,8 +199,8 @@
         </view>
 
         <!-- 感谢信息 -->
-        <view class="thank-you-container" wx:if="{{feedbackSubmitted}}">
-          <view class="thank-you-icon">🙏11</view>
+        <view class="thank-you-container" wx:if="{{result.hasFeedback}}">
+          <view class="thank-you-icon">🙏</view>
           <text class="thank-you-title">{{i18n.diary.thankYouTitle}}</text>
           <text class="thank-you-text">{{i18n.diary.thankYouText}}</text>
         </view>

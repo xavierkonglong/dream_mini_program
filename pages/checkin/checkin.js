@@ -9,18 +9,18 @@ Page({
     taskList: [
       {
         id: 1,
-        title: '记录血糖',
-        desc: '记录血糖,控糖轻松规律',
+        title: 'title1',
+        desc: 'desc1',
         points: '每次+10分,每日最多30分',
-        iconEmoji: '🩸',
+        iconEmoji: '📱',
         iconClass: 'blood-glucose',
         completed: false,
         buttonText: '去记录 >'
       },
       {
         id: 2,
-        title: '绑定众安账户',
-        desc: '凭众安账户享受诸多福利',
+        title: 'title2',
+        desc: 'desc2',
         points: '+300分',
         iconEmoji: '📱',
         iconClass: 'zhongan',

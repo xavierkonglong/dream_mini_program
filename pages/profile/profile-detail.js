@@ -223,33 +223,38 @@ Page({
     if (!timeStr) return "";
 
     try {
-      console.log("原始时间字符串:", timeStr);
-
       // 处理ISO格式时间（包含T）
       let date;
       if (timeStr.includes("T")) {
         // ISO格式：2025-09-30T10:25:03
-        // 直接使用new Date()解析ISO格式
         date = new Date(timeStr);
       } else {
-        // 其他格式
-        date = new Date(timeStr.replace(/-/g, "/"));
+        // 其他常见格式：2025-11-04 04:55:46
+        const isoTimeStr = timeStr.replace(" ", "T") + "+08:00";
+        date = new Date(isoTimeStr);
+        if (isNaN(date.getTime())) {
+          date = new Date(timeStr.replace(/-/g, "/"));
+        }
       }
 
       if (isNaN(date.getTime())) {
-        console.error("时间解析失败:", timeStr);
         return timeStr;
       }
 
+      const lang = getLang();
       const year = date.getFullYear();
       const month = date.getMonth() + 1;
 
-      const formattedTime = `${year}年${month}月`;
-      console.log("格式化后的时间:", formattedTime);
+      if (lang === "en") {
+        const months = [
+          "Jan", "Feb", "Mar", "Apr", "May", "Jun",
+          "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"
+        ];
+        return `${months[month - 1]} ${year}`;
+      }
 
-      return formattedTime;
+      return `${year}年${month}月`;
     } catch (error) {
-      console.error("时间格式化失败:", error);
       return timeStr;
     }
   },

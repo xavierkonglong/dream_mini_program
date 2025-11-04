@@ -19,9 +19,9 @@
       <image class="avatar" src="{{imageUrls.DEFAULT_AVATAR}}" mode="aspectFill"></image>
       <view class="login-actions">
         <text class="login-tips">{{i18n.profile.loginTips}}</text>
-        <button class="login-btn" bindtap="onLogin">
+        <!-- <button class="login-btn" bindtap="onLogin">
           <text class="btn-text">{{i18n.profile.loginNow}}</text>
-        </button>
+        </button> -->
       </view>
     </view>
   </view>
@@ -80,10 +80,30 @@
               </view>
             </view>
           </view>
+
+          <!-- 加载更多提示 -->
+          <view class="load-more-container" wx:if="{{dreamDiaryList.length > 0}}">
+            <view class="load-more-text" wx:if="{{diaryLoading}}">
+              <van-loading type="spinner" size="20px" />
+              <text class="loading-text">{{i18n.profile.loading}}</text>
+            </view>
+            <view class="load-more-text" wx:elif="{{!diaryHasMore}}">
+              <text class="no-more-text">{{i18n.profile.noMore}}</text>
+            </view>
+            <view class="load-more-text" wx:else>
+              <text class="pull-up-text">{{i18n.profile.pullUpToLoadMore}}</text>
+            </view>
+          </view>
+        </view>
+
+        <!-- 加载状态 -->
+        <view class="loading-state" wx:if="{{dreamDiaryList.length === 0 && diaryLoading}}">
+          <van-loading type="spinner" size="40px" color="#8b5cf6" />
+          <text class="loading-text">{{i18n.profile.loading}}</text>
         </view>
 
         <!-- 梦境日记空状态 -->
-        <view class="empty-state" wx:if="{{dreamDiaryList.length === 0}}">
+        <view class="empty-state" wx:elif="{{dreamDiaryList.length === 0 && !diaryLoading}}">
           <view class="empty-content">
             <text class="empty-icon">🌙</text>
             <text class="empty-title">{{i18n.profile.noDreamDiary}}</text>
@@ -156,10 +176,30 @@
               </view>
             </view>
           </view>
+
+          <!-- 加载更多提示 -->
+          <view class="load-more-container" wx:if="{{collectionList.length > 0}}">
+            <view class="load-more-text" wx:if="{{collectionLoading}}">
+              <van-loading type="spinner" size="20px" />
+              <text class="loading-text">{{i18n.profile.loading}}</text>
+            </view>
+            <view class="load-more-text" wx:elif="{{!collectionHasMore}}">
+              <text class="no-more-text">{{i18n.profile.noMore}}</text>
+            </view>
+            <view class="load-more-text" wx:else>
+              <text class="pull-up-text">{{i18n.profile.pullUpToLoadMore}}</text>
+            </view>
+          </view>
+        </view>
+
+        <!-- 加载状态 -->
+        <view class="loading-state" wx:if="{{collectionList.length === 0 && collectionLoading}}">
+          <van-loading type="spinner" size="40px" color="#8b5cf6" />
+          <text class="loading-text">{{i18n.profile.loading}}</text>
         </view>
 
         <!-- 空状态 -->
-        <view class="empty-state" wx:if="{{collectionList.length === 0}}">
+        <view class="empty-state" wx:elif="{{collectionList.length === 0 && !collectionLoading}}">
           <view class="empty-content">
             <text class="empty-icon">⭐</text>
             <text class="empty-title">{{i18n.profile.noCollections}}</text>
@@ -232,10 +272,30 @@
               </view>
             </view>
           </view>
+
+          <!-- 加载更多提示 -->
+          <view class="load-more-container" wx:if="{{likesList.length > 0}}">
+            <view class="load-more-text" wx:if="{{likesLoading}}">
+              <van-loading type="spinner" size="20px" />
+              <text class="loading-text">{{i18n.profile.loading}}</text>
+            </view>
+            <view class="load-more-text" wx:elif="{{!likesHasMore}}">
+              <text class="no-more-text">{{i18n.profile.noMore}}</text>
+            </view>
+            <view class="load-more-text" wx:else>
+              <text class="pull-up-text">{{i18n.profile.pullUpToLoadMore}}</text>
+            </view>
+          </view>
+        </view>
+
+        <!-- 加载状态 -->
+        <view class="loading-state" wx:if="{{likesList.length === 0 && likesLoading}}">
+          <van-loading type="spinner" size="40px" color="#8b5cf6" />
+          <text class="loading-text">{{i18n.profile.loading}}</text>
         </view>
 
         <!-- 空状态 -->
-        <view class="empty-state" wx:if="{{likesList.length === 0}}">
+        <view class="empty-state" wx:elif="{{likesList.length === 0 && !likesLoading}}">
           <view class="empty-content">
             <text class="empty-icon">❤️</text>
             <text class="empty-title">{{i18n.profile.noLikes}}</text>

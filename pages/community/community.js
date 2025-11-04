@@ -139,6 +139,10 @@ Page({
           emptyDesc: t("community.emptyDesc"),
           loginTitle: t("community.loginTitle"),
           loginSubtitle: t("community.loginSubtitle"),
+          // 排序标签
+          sortLatest: t("community.sortLatest"),
+          sortMostLiked: t("community.sortMostLiked"),
+          sortMostFavorited: t("community.sortMostFavorited"),
         },
         app: {
           shareTitle: t("app.shareTitle"),

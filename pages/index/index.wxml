@@ -6,9 +6,9 @@
   <!-- 右上角功能区 -->
   <view class="top-actions">
     <!-- 签到入口 -->
-    <view class="checkin-entry" bindtap="goToCheckin">
+    <!-- <view class="checkin-entry" bindtap="goToCheckin">
       <text class="checkin-icon">🎁</text>
-    </view>
+    </view> -->
     <!-- 语言切换按钮 -->
     <view class="language-toggle" bindtap="onLanguageToggle">
       <text class="language-text">{{language === 'zh' ? 'EN' : '中文'}}</text>

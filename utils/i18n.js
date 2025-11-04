@@ -48,6 +48,10 @@ const i18n = {
       operationFailed: "操作失败",
       shareTitle: "梦境社区",
       timelineTitle: "梦境社区 - 分享你的梦境故事",
+      // 排序标签
+      sortLatest: "最新",
+      sortMostLiked: "点赞最多",
+      sortMostFavorited: "收藏最多",
     },
 
     // 个人页面
@@ -81,6 +85,12 @@ const i18n = {
       confirmLogout: "确认退出",
       confirmLogoutContent: "确定要退出登录吗？",
       loadFailed: "加载失败，请重试",
+      // 新增：列表加载提示
+      noMore: "没有更多了",
+      pullUpToLoadMore: "上拉加载更多",
+      loading: "加载中...",
+      jumpFailed: "跳转失败",
+      loadMoreFailed: "加载更多失败",
       shareTitle: "我的梦境",
       timelineTitle: "我的梦境 - 记录美好梦境",
       postIdNotFound: "帖子ID不存在",
@@ -487,6 +497,10 @@ const i18n = {
       navigateFailed: "Navigation failed",
       postNotFound: "Post not found",
       operationFailed: "Operation failed",
+      // 排序标签
+      sortLatest: "Latest",
+      sortMostLiked: "Most Liked",
+      sortMostFavorited: "Most Favorited",
     },
 
     // 个人页面
@@ -520,6 +534,12 @@ const i18n = {
       confirmLogout: "Confirm Logout",
       confirmLogoutContent: "Are you sure you want to logout?",
       loadFailed: "Load failed, please try again",
+      // New: List loading hints
+      noMore: "No more",
+      pullUpToLoadMore: "Pull up to load more",
+      loading: "Loading...",
+      jumpFailed: "Navigation failed",
+      loadMoreFailed: "Load more failed",
       postIdNotFound: "Post ID not found",
     },
 

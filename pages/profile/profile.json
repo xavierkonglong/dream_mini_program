@@ -3,8 +3,10 @@
     "login-modal": "../../components/login-modal/login-modal",
     "profile-setup-modal": "../../components/profile-setup-modal/profile-setup-modal",
     "custom-tabbar": "../../components/custom-tabbar/custom-tabbar",
-    "van-icon": "@vant/weapp/icon/index"
+    "van-icon": "@vant/weapp/icon/index",
+    "van-loading": "@vant/weapp/loading/index"
   },
   "navigationBarTitleText": "我的",
-  "enablePullDownRefresh": true
+  "enablePullDownRefresh": true,
+  "onReachBottomDistance": 100
 }

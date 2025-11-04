@@ -172,7 +172,7 @@
       <view class="section-title">{{i18n.result.rateUs}}</view>
       <view class="cloud-card feedback-card">
         <!-- 反馈表单 -->
-        <view wx:if="{{!feedbackSubmitted}}">
+        <view wx:if="{{!result.hasFeedback}}">
           <!-- 星级评分 -->
           <view class="rating-container">
             <text class="rating-label">{{i18n.result.ratingLabel}}</text>
@@ -199,7 +199,7 @@
         </view>
 
         <!-- 感谢信息 -->
-        <view class="thank-you-container" wx:if="{{feedbackSubmitted}}">
+        <view class="thank-you-container" wx:if="{{result.hasFeedback}}">
           <view class="thank-you-icon">🙏</view>
           <text class="thank-you-title">{{i18n.result.thankYouTitle}}</text>
           <text class="thank-you-text">{{i18n.result.thankYouText}}</text>

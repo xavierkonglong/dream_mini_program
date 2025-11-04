@@ -19,9 +19,9 @@
       tab-class="community-tabs__tab"
       line-class="community-tabs__line"
     >
-      <van-tab title="最新" name="time" />
-      <van-tab title="点赞最多" name="like" />
-      <van-tab title="收藏最多" name="favorite" />
+      <van-tab title="{{i18n.community.sortLatest}}" name="time" />
+      <van-tab title="{{i18n.community.sortMostLiked}}" name="like" />
+      <van-tab title="{{i18n.community.sortMostFavorited}}" name="favorite" />
     </van-tabs>
   </view>
 

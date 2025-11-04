@@ -56,6 +56,11 @@ Page({
           result.analysisId = parseInt(result.analysisId);
         }
 
+        // 确保hasFeedback字段存在（兼容旧数据）
+        if (result.hasFeedback === undefined) {
+          result.hasFeedback = false;
+        }
+
         // 格式化解析内容，进行智能分段
         if (result.interpretation) {
           result.interpretationParagraphs = this.formatInterpretation(
@@ -178,6 +183,11 @@ Page({
     this.stopVideoPolling();
     // 移除语言变化事件监听
     wx.eventBus && wx.eventBus.off("languageChanged", this.onLanguageChanged);
+    // 清理二维码临时文件（若存在）
+    if (this.qrTempPath) {
+      this.cleanupTempFile(this.qrTempPath);
+      this.qrTempPath = null;
+    }
   },
 
   /**
@@ -281,6 +291,7 @@ Page({
           thinkingSaved: t("diary.thinkingSaved"),
           loginRequiredForSave: t("diary.loginRequiredForSave"),
           submitFailed: t("diary.submitFailed"),
+          myThinking: t("result.myThinking"), // 复用result中的myThinking
         },
       },
     });
@@ -346,6 +357,7 @@ Page({
           favoriteCount: diaryData.favoriteCount,
           createdAt: diaryData.createdAt,
           visibility: diaryData.visibility,
+          hasFeedback: diaryData.hasFeedback || false, // 是否已提交反馈
         };
 
         // 格式化解析内容，进行智能分段
@@ -1540,6 +1552,9 @@ Page({
       const qrCodeUrl = `${config.baseURL}/auth/wechat/mini?path=pages/index/index`;
       console.log("小程序码URL:", qrCodeUrl);
 
+      // 先清理旧的二维码文件，避免存储空间累积
+      this.cleanupOldQRFiles();
+
       // 直接下载二维码二进制，写入本地文件后返回本地路径，避免授权头在 downloadFile 中无法携带的问题
       return new Promise((resolve) => {
         const token =
@@ -1566,13 +1581,37 @@ Page({
                     resolve(filePath);
                   },
                   fail: (e) => {
-                    console.warn("写入二维码失败:", e);
-                    resolve(null);
+                    console.warn("写入二维码失败（可能存储空间不足）:", e);
+                    // 如果写入 USER_DATA_PATH 失败，尝试使用 downloadFile 下载到临时目录
+                    this.downloadQRCodeToTemp(qrCodeUrl, token)
+                      .then((tempPath) => {
+                        if (tempPath) {
+                          this.qrTempPath = tempPath;
+                          resolve(tempPath);
+                        } else {
+                          resolve(null);
+                        }
+                      })
+                      .catch(() => {
+                        resolve(null);
+                      });
                   },
                 });
               } catch (e) {
                 console.warn("保存二维码异常:", e);
-                resolve(null);
+                // 尝试使用 downloadFile 作为备用方案
+                this.downloadQRCodeToTemp(qrCodeUrl, token)
+                  .then((tempPath) => {
+                    if (tempPath) {
+                      this.qrTempPath = tempPath;
+                      resolve(tempPath);
+                    } else {
+                      resolve(null);
+                    }
+                  })
+                  .catch(() => {
+                    resolve(null);
+                  });
               }
             } else {
               console.warn("获取二维码失败:", res.statusCode);
@@ -1581,13 +1620,87 @@ Page({
           },
           fail: (err) => {
             console.warn("请求二维码失败:", err);
-            resolve(null);
+            // 如果 request 失败，尝试使用 downloadFile
+            this.downloadQRCodeToTemp(qrCodeUrl, token)
+              .then((tempPath) => {
+                if (tempPath) {
+                  this.qrTempPath = tempPath;
+                  resolve(tempPath);
+                } else {
+                  resolve(null);
+                }
+              })
+              .catch(() => {
+                resolve(null);
+              });
           },
         });
       });
     } catch (error) {
       console.error("获取小程序码失败:", error);
       return null;
+    }
+  },
+
+  // 使用 downloadFile 下载二维码到临时目录（备用方案）
+  downloadQRCodeToTemp(qrCodeUrl, token) {
+    return new Promise((resolve) => {
+      // 如果 URL 需要授权，需要在服务端支持通过 URL 参数传递 token
+      // 或者使用其他方式获取二维码
+      wx.downloadFile({
+        url: qrCodeUrl,
+        header: token ? { Authorization: `Bearer ${token}` } : {},
+        success: (res) => {
+          if (res.statusCode === 200 && res.tempFilePath) {
+            console.log("二维码下载到临时目录成功:", res.tempFilePath);
+            resolve(res.tempFilePath);
+          } else {
+            console.warn("二维码下载失败，状态码:", res.statusCode);
+            resolve(null);
+          }
+        },
+        fail: (err) => {
+          console.warn("二维码下载失败:", err);
+          resolve(null);
+        },
+      });
+    });
+  },
+
+  // 清理旧的二维码文件
+  cleanupOldQRFiles() {
+    try {
+      const fs = wx.getFileSystemManager();
+      const dirPath = wx.env.USER_DATA_PATH;
+      
+      // 读取目录，查找所有 qr_ 开头的文件
+      fs.readdir({
+        dirPath,
+        success: (res) => {
+          if (res.files && res.files.length > 0) {
+            const qrFiles = res.files.filter((file) => file.startsWith("qr_"));
+            // 清理所有旧的二维码文件
+            qrFiles.forEach((file) => {
+              const filePath = `${dirPath}/${file}`;
+              fs.unlink({
+                filePath,
+                success: () => {
+                  console.log("清理旧二维码文件:", file);
+                },
+                fail: () => {
+                  // 忽略删除失败的错误
+                },
+              });
+            });
+          }
+        },
+        fail: () => {
+          // 如果读取目录失败，忽略错误
+        },
+      });
+    } catch (e) {
+      // 忽略清理过程中的错误
+      console.warn("清理旧二维码文件时出错:", e);
     }
   },
 
@@ -1902,14 +2015,35 @@ Page({
           duration: 2000,
         });
 
-        // 清空已保存的回答
-        const updateData = {};
+        // 更新result对象，将答案直接显示在界面上
+        const updateData = {
+          result: { ...this.data.result }
+        };
+
+        // 处理问题1的答案
         if (answer1 && answer1.trim()) {
-          updateData.answer1 = "";
+          // 保存原始问题文本（如果没有保存过）
+          const originalQuestion1 = this.data.result.guidingQuestion1Answer 
+            ? this.data.result.guidingQuestion1.split('\n\n💭')[0].trim()
+            : (this.data.result.guidingQuestion1 || '');
+          
+          updateData.result.guidingQuestion1Answer = answer1.trim();
+          updateData.result.guidingQuestion1 = originalQuestion1 + "\n\n💭 " + this.data.i18n.diary.myThinking + "：\n" + answer1.trim();
+          updateData.answer1 = ""; // 清空输入框
         }
+
+        // 处理问题2的答案
         if (answer2 && answer2.trim()) {
-          updateData.answer2 = "";
+          // 保存原始问题文本（如果没有保存过）
+          const originalQuestion2 = this.data.result.guidingQuestion2Answer 
+            ? this.data.result.guidingQuestion2.split('\n\n💭')[0].trim()
+            : (this.data.result.guidingQuestion2 || '');
+          
+          updateData.result.guidingQuestion2Answer = answer2.trim();
+          updateData.result.guidingQuestion2 = originalQuestion2 + "\n\n💭 " + this.data.i18n.diary.myThinking + "：\n" + answer2.trim();
+          updateData.answer2 = ""; // 清空输入框
         }
+
         this.setData(updateData);
       } else {
         throw new Error(response?.message || "保存失败");
@@ -1947,7 +2081,7 @@ Page({
   async onSubmitFeedback() {
     if (this.data.submittingFeedback) return;
 
-    const { feedbackRating, feedbackContent } = this.data;
+    const { feedbackRating, feedbackContent, result } = this.data;
 
     // 检查是否至少有一项内容
     if (
@@ -1961,17 +2095,28 @@ Page({
       return;
     }
 
+    // 检查是否有postId
+    if (!result || !result.postId) {
+      wx.showToast({
+        title: "缺少必要参数",
+        icon: "error",
+      });
+      return;
+    }
+
     this.setData({ submittingFeedback: true });
 
     try {
       console.log("提交反馈:", {
         rating: feedbackRating,
         content: feedbackContent,
+        postId: result.postId,
       });
 
       const http = require("../../services/http.js");
       const requestData = {
         content: feedbackContent,
+        postId: result.postId, // 带上postId
       };
 
       // 只有当评分大于0时才添加rating参数
@@ -1989,11 +2134,11 @@ Page({
           icon: "success",
         });
 
-        // 清空表单并标记反馈已提交
+        // 清空表单并更新hasFeedback状态
         this.setData({
           feedbackRating: 0,
           feedbackContent: "",
-          feedbackSubmitted: true,
+          "result.hasFeedback": true, // 更新hasFeedback状态
         });
       } else {
         throw new Error(response?.message || "反馈提交失败");
@@ -2511,5 +2656,10 @@ Page({
       title: this.data.i18n.diary.posterGenerationFailed || "海报生成失败",
       icon: "error",
     });
+    // 清理二维码临时文件（若存在）
+    if (this.qrTempPath) {
+      this.cleanupTempFile(this.qrTempPath);
+      this.qrTempPath = null;
+    }
   },
 });
