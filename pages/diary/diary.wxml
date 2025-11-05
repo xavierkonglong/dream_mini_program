@@ -91,11 +91,23 @@
     </view>
 
     <!-- AI梦境图像（仅文生图模式） -->
-    <view class="image-section" wx:if="{{!isVideoType && result.imageUrl}}">
+    <view class="image-section" wx:if="{{!isVideoType && (result.imageUrl || imageLoading)}}">
       <view class="section-title">{{i18n.diary.aiImage}}</view>
-      <view class="image-container">
+
+      <!-- 图片生成中状态 -->
+      <view class="image-status-container" wx:if="{{imageLoading && !result.imageUrl}}">
+        <view class="cloud-card video-status-card">
+          <view class="status-icon">⏳</view>
+          <view class="status-text">{{i18n.diary.imageGenerating}}</view>
+          <view class="status-tip">{{i18n.diary.imageGeneratingTip}}</view>
+        </view>
+      </view>
+
+      <!-- 图片显示 -->
+      <view class="image-container" wx:elif="{{result.imageUrl}}">
         <image class="dream-image" src="{{result.imageUrl}}" mode="aspectFill" bindtap="onPreviewImage" />
       </view>
+
       <view class="image-description" wx:if="{{result.imagePrompt}}">
         <text class="description-text" user-select="{{true}}">{{result.imagePrompt}}</text>
       </view>
@@ -161,7 +173,9 @@
         <text class="publish-text">{{i18n.diary.publish}}</text>
       </button>
 
-      <button class="action-btn poster-button small" bindtap="onGeneratePoster">
+      <!-- 生成海报按钮：只在视频或图片生成完成后显示 -->
+      <!-- 条件：1.视频模式：已完成(videoStatus=2)且有视频URL 2.图片模式：有图片URL且不在加载中 3.纯文本模式：没有图片和视频提示词 -->
+      <button class="action-btn poster-button small" wx:if="{{(isVideoType && videoStatus === 2 && videoUrl) || (!isVideoType && result.imageUrl && !imageLoading) || (!result.imagePrompt && !result.videoPrompt)}}" bindtap="onGeneratePoster">
         <text class="poster-icon">🎨</text>
         <text class="poster-text">{{i18n.diary.generatePoster}}</text>
       </button>

@@ -82,8 +82,8 @@ function request(options) {
             });
             reject(new Error(errorMsg));
           }
-        } else if (res.statusCode === 401) {
-          // 未授权，清除token并跳转登录
+        } else if (res.statusCode === 401 || res.statusCode === 400) {
+          // 未授权或token过期（400/401），清除token并跳转登录
           app.clearLoginInfo();
           wx.eventBus && wx.eventBus.emit('unauthorized', {
             statusCode: res.statusCode,
@@ -271,8 +271,8 @@ function upload(url, filePath, name = 'file', formData = {}, options = {}) {
               });
               reject(new Error(errorMsg));
             }
-        } else if (res.statusCode === 401) {
-          // 未授权，清除token
+        } else if (res.statusCode === 401 || res.statusCode === 400) {
+          // 未授权或token过期（400/401），清除token
           app.clearLoginInfo();
           
           // 触发全局401事件，让页面自己处理登录弹窗

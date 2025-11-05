@@ -21,6 +21,10 @@ Page({
     videoTaskId: null,
     videoUrl: null,
     videoStatus: "pending", // pending, processing, completed, failed
+    videoPollCount: 0,
+    // 图片轮询相关
+    imageLoading: false,
+    imagePollCount: 0,
     // 疏导性问题相关
     answer1: "",
     answer2: "",
@@ -106,10 +110,13 @@ Page({
           console.log("没有guidingQuestionsJson字段");
         }
 
-        // 检查是否是视频类型
-        const isVideoType = result.generationType === "video";
-        const videoTaskId = result.videoTaskId || null;
+        // 检查是否是视频类型：根据 videoPrompt 判断
+        const hasVideoPrompt = !!(result.videoPrompt && result.videoPrompt.trim());
+        const hasImagePrompt = !!(result.imagePrompt && result.imagePrompt.trim());
+        const isVideoType = hasVideoPrompt;
+        const isImageType = !hasVideoPrompt && hasImagePrompt;
         const videoUrl = result.videoUrl || null;
+        const imageUrl = result.imageUrl || null;
 
         if (isVideoType) {
           this.setData({
@@ -118,13 +125,24 @@ Page({
             videoStatus: videoUrl ? 2 : 1, // 如果有videoUrl就是已完成，否则是进行中
           });
 
-          // 如果有videoTaskId但没有videoUrl，开始轮询
-          if (videoTaskId && !videoUrl) {
-            this.setData({
-              videoTaskId: videoTaskId,
-            });
+          // 如果有 videoPrompt 但没有 videoUrl，且有 postId，开始轮询
+          if (hasVideoPrompt && !videoUrl && result.postId) {
             this.startVideoPolling();
           }
+        } else if (isImageType) {
+          this.setData({
+            isVideoType: false,
+          });
+          
+          // 如果有 imagePrompt 但没有 imageUrl，且有 postId，开始轮询
+          if (hasImagePrompt && !imageUrl && result.postId) {
+            this.setData({ imageLoading: true });
+            this.startImagePolling();
+          }
+        } else {
+          this.setData({
+            isVideoType: false,
+          });
         }
 
         // 预加载AI图片，转为本地临时路径，避免跨域/域名解析问题
@@ -154,33 +172,32 @@ Page({
 
     // 监听语言变化事件
     this.onLanguageChanged = (newLanguage) => {
-      console.log("梦境日记页面收到语言变化事件:", newLanguage);
       this.initI18n();
     };
     wx.eventBus && wx.eventBus.on("languageChanged", this.onLanguageChanged);
   },
 
   onShow() {
-    console.log("梦境日记页显示");
     this.checkLoginStatus();
 
     // 强制更新标题
     this.initI18n();
     const newTitle = t("pageTitle.diary");
-    console.log("日记页设置新标题:", newTitle);
     wx.setNavigationBarTitle({ title: newTitle });
   },
 
   onHide() {
-    console.log("梦境日记页隐藏");
     // 停止视频轮询
     this.stopVideoPolling();
+    // 停止图片轮询
+    this.stopImagePolling();
   },
 
   onUnload() {
-    console.log("梦境日记页卸载");
     // 停止视频轮询
     this.stopVideoPolling();
+    // 停止图片轮询
+    this.stopImagePolling();
     // 移除语言变化事件监听
     wx.eventBus && wx.eventBus.off("languageChanged", this.onLanguageChanged);
     // 清理二维码临时文件（若存在）
@@ -211,6 +228,8 @@ Page({
           saving: t("diary.saving"),
           aiImage: t("diary.aiImage"),
           aiVideo: t("diary.aiVideo"),
+          imageGenerating: t("diary.imageGenerating"),
+          imageGeneratingTip: t("diary.imageGeneratingTip"),
           videoGenerating: t("diary.videoGenerating"),
           videoGeneratingTip: t("diary.videoGeneratingTip"),
           videoFailed: t("diary.videoFailed"),
@@ -405,31 +424,69 @@ Page({
           console.log("loadDiaryDetail - 没有guidingQuestionsJson字段");
         }
 
-        // 判断内容类型：优先视频，其次图片，最后文本
-        const isVideoType = !!(result.videoUrl || result.videoPrompt);
-        const isImageType = !!(result.imageUrl || result.imagePrompt);
+        // 判断内容类型：根据 videoPrompt 和 imagePrompt 来判断
+        // 优先视频，其次图片，最后文本
+        const hasVideoPrompt = !!(result.videoPrompt && result.videoPrompt.trim());
+        const hasImagePrompt = !!(result.imagePrompt && result.imagePrompt.trim());
+        
+        const isVideoType = hasVideoPrompt;
+        const isImageType = !hasVideoPrompt && hasImagePrompt;
 
         if (isVideoType) {
           result.generationType = "video";
+          
+          // 判断是否需要轮询：有 videoPrompt 但没有 videoUrl，且 postId 存在
+          const hasVideoUrl = result.videoUrl && typeof result.videoUrl === 'string' && result.videoUrl.trim() !== "";
+          const shouldStartPolling = hasVideoPrompt && !hasVideoUrl && postId;
+ 
+          // 确保 result 中有 postId（使用传入的参数或 API 返回的值）
+          result.postId = result.postId || postId;
+          
           this.setData({
             isVideoType: true,
-            videoUrl: result.videoUrl,
+            videoUrl: result.videoUrl || null,
             videoStatus: result.videoUrl ? 2 : 1, // 如果有videoUrl就是已完成，否则是进行中
+            result,
           });
+          
+          // 如果有 videoPrompt 但没有 videoUrl，开始轮询（postId 一定存在）
+          if (shouldStartPolling) {
+            // 使用 setTimeout 确保 setData 完成后再启动轮询
+            setTimeout(() => {
+              this.startVideoPolling();
+            }, 100);
+          } else {
+            console.log("不满足视频轮询条件，跳过轮询");
+          }
         } else if (isImageType) {
           result.generationType = "image";
+          
+          // 确保 result 中有 postId（使用传入的参数或 API 返回的值）
+          result.postId = result.postId || postId;
+          
           this.setData({
             isVideoType: false,
+            result,
           });
+          
+          // 如果有 imagePrompt 但没有 imageUrl，开始轮询（postId 一定存在）
+          const hasImageUrl = result.imageUrl && typeof result.imageUrl === 'string' && result.imageUrl.trim() !== "";
+          if (hasImagePrompt && !hasImageUrl && postId) {
+            this.setData({ imageLoading: true });
+            setTimeout(() => {
+              this.startImagePolling();
+            }, 100);
+          }
         } else {
           result.generationType = "text";
           this.setData({
             isVideoType: false,
+            result,
           });
         }
 
         // 预加载AI图片，转为本地临时路径，避免跨域/域名解析问题
-        // 只有文生图模式才处理图片，文生视频不需要图片
+        // 只有文生图模式且有图片URL时才处理
         if (!isVideoType && result.imageUrl) {
           this.ensureLocalImage(result.imageUrl)
             .then((localPath) => {
@@ -441,8 +498,24 @@ Page({
             .catch(() => {
               this.setData({ result, loading: false });
             });
-        } else {
+        } else if (!isVideoType && !hasImagePrompt) {
+          // 既不是视频，也没有图片提示词，直接设置完成
           this.setData({ result, loading: false });
+        } else if (!isVideoType && hasImagePrompt && result.imageUrl) {
+          // 有图片提示词且有图片URL，处理图片
+          this.ensureLocalImage(result.imageUrl)
+            .then((localPath) => {
+              if (localPath) {
+                result.imageUrl = localPath;
+              }
+              this.setData({ result, loading: false, imageLoading: false });
+            })
+            .catch(() => {
+              this.setData({ result, loading: false, imageLoading: false });
+            });
+        } else {
+          // 其他情况（正在轮询），保持 loading: false，让轮询处理
+          this.setData({ loading: false });
         }
 
         wx.hideLoading();
@@ -461,16 +534,11 @@ Page({
   },
 
   /**
-   * 开始视频状态轮询（每15秒一次）
+   * 开始视频状态轮询（串行：每次完成后等待5秒再请求，最多60次）
    */
   startVideoPolling() {
-    console.log("开始视频轮询");
-    // 先立即查询一次
+    // 采用串行轮询：本次请求完成后，再等待5秒触发下一次
     this.pollVideoStatus();
-    // 然后每15秒查询一次
-    this.videoPollingTimer = setInterval(() => {
-      this.pollVideoStatus();
-    }, 15000); // 15秒
   },
 
   /**
@@ -478,71 +546,342 @@ Page({
    */
   stopVideoPolling() {
     if (this.videoPollingTimer) {
-      console.log("停止视频轮询");
-      clearInterval(this.videoPollingTimer);
+      clearTimeout(this.videoPollingTimer);
       this.videoPollingTimer = null;
     }
   },
 
   /**
-   * 轮询视频状态
+   * 轮询视频状态：使用 getDiaryDetail 接口
    */
   async pollVideoStatus() {
-    const { videoTaskId, videoStatus } = this.data;
+    const { result, videoPollCount, videoStatus } = this.data;
 
-    // 如果任务已完成或失败，停止轮询
+
+
+    // 已完成/失败则停止
     if (videoStatus === 2 || videoStatus === 3) {
       this.stopVideoPolling();
       return;
     }
 
-    if (!videoTaskId) {
-      console.error("缺少视频任务ID");
+    // 达到最大次数后停止（最多60次）
+    if (videoPollCount >= 60) {
+      this.stopVideoPolling();
       return;
     }
 
+    if (!result || !result.postId) {
+      this.stopVideoPolling();
+      return;
+    }
+
+    let requestSucceeded = false;
     try {
-      console.log("查询视频状态, taskId:", videoTaskId);
       const dreamService = require("../../services/dream.js");
-      const response = await dreamService.getVideoStatus(videoTaskId);
-
-      console.log("视频状态响应:", response);
-
+      const response = await dreamService.getDiaryDetail(result.postId);
       if (response && response.code === 0 && response.data) {
-        const { status, videoUrl } = response.data;
+        requestSucceeded = true;
+        const diaryData = response.data;
+        const latestUrl = diaryData.videoUrl || null;
 
-        console.log("视频状态:", status, "视频URL:", videoUrl);
+        // 判断视频状态：如果有 videoUrl 就是已完成，如果有 videoPrompt 但没有 videoUrl 就是进行中
+        let videoStatusNum = 1; // 默认进行中
+        if (latestUrl) {
+          videoStatusNum = 2; // 已完成
+        } else if (diaryData.videoPrompt && diaryData.videoPrompt.trim()) {
+          videoStatusNum = 1; // 进行中
+        } else {
+          videoStatusNum = 3; // 失败（没有videoPrompt也没有videoUrl）
+        }
 
-        // 更新状态 - 直接使用后端返回的数字状态
-        const updateData = {
-          videoStatus: status,
+        // 处理keywordsJson字符串，转换为数组
+        let keywords = [];
+        if (diaryData.keywordsJson) {
+          try {
+            keywords = JSON.parse(diaryData.keywordsJson);
+          } catch (e) {
+            console.warn("解析keywordsJson失败:", e);
+            keywords = result.keywords || [];
+          }
+        } else {
+          keywords = result.keywords || [];
+        }
+
+        // 更新完整的 result 对象，包括所有字段
+        const updatedResult = {
+          ...result,
+          analysisId: diaryData.analysisId || result.analysisId,
+          postId: diaryData.postId || result.postId,
+          dreamDescription: diaryData.dreamDescription || result.dreamDescription || "",
+          keywords: keywords,
+          interpretation: diaryData.interpretation || result.interpretation || "",
+          imagePrompt: diaryData.imagePrompt || result.imagePrompt || "",
+          imageUrl: diaryData.imageUrl || result.imageUrl || null, // 重要：更新 imageUrl
+          videoPrompt: diaryData.videoPrompt || result.videoPrompt || "",
+          videoUrl: diaryData.videoUrl || result.videoUrl || null,
+          guidingQuestionsJson: diaryData.guidingQuestionsJson || result.guidingQuestionsJson || "",
+          hasFeedback: result.hasFeedback || false,
         };
 
-        if (status === 2 && videoUrl) {
-          updateData.videoUrl = videoUrl;
-          // 停止轮询
+        // 格式化解析内容
+        if (updatedResult.interpretation) {
+          updatedResult.interpretationParagraphs = this.formatInterpretation(
+            updatedResult.interpretation
+          );
+        }
+
+        // 解析疏导性问题JSON（如果存在）
+        if (updatedResult.guidingQuestionsJson) {
+          try {
+            const guidingQuestions = JSON.parse(updatedResult.guidingQuestionsJson);
+            if (guidingQuestions.question1) {
+              const questionData = guidingQuestions.question1;
+              const question = questionData.question;
+              const answer = questionData.answer || "";
+              updatedResult.guidingQuestion1 = question;
+              updatedResult.guidingQuestion1Answer = answer;
+              if (answer) {
+                updatedResult.guidingQuestion1 =
+                  question + "\n\n💭 我的思考：\n" + answer;
+              }
+            }
+            if (guidingQuestions.question2) {
+              const questionData = guidingQuestions.question2;
+              const question = questionData.question;
+              const answer = questionData.answer || "";
+              updatedResult.guidingQuestion2 = question;
+              updatedResult.guidingQuestion2Answer = answer;
+              if (answer) {
+                updatedResult.guidingQuestion2 =
+                  question + "\n\n💭 我的思考：\n" + answer;
+              }
+            }
+          } catch (error) {
+            // 解析失败，保持原有值
+          }
+        }
+
+        // 如果 imageUrl 是远程 URL，转换为本地路径
+        if (updatedResult.imageUrl && typeof updatedResult.imageUrl === 'string' && 
+            (updatedResult.imageUrl.startsWith('http://') || updatedResult.imageUrl.startsWith('https://'))) {
+          try {
+            const localImagePath = await this.ensureLocalImage(updatedResult.imageUrl);
+            if (localImagePath) {
+              updatedResult.imageUrl = localImagePath;
+            }
+          } catch (error) {
+            console.error("imageUrl 转换失败:", error);
+          }
+        }
+
+        const update = { videoStatus: videoStatusNum };
+
+        if (videoStatusNum === 2 && latestUrl) {
+          update.videoUrl = latestUrl;
+          // 完整更新 result 对象，包括 imageUrl
+          this.setData({
+            ...update,
+            result: updatedResult,
+          });
           this.stopVideoPolling();
-          // 提示用户视频已生成
           wx.showToast({
             title: this.data.i18n.diary.videoGenerationComplete,
             icon: "success",
             duration: 2000,
           });
-        } else if (status === 3) {
-          // 停止轮询
+          return;
+        }
+
+        if (videoStatusNum === 3) {
+          // 失败时也更新 result（可能包含 imageUrl）
+          this.setData({
+            ...update,
+            result: updatedResult,
+          });
           this.stopVideoPolling();
           wx.showToast({
             title: this.data.i18n.diary.videoGenerationFailed,
             icon: "error",
             duration: 2000,
           });
+          return;
         }
 
-        this.setData(updateData);
+        // 更新进行中状态，同时更新 result（可能包含 imageUrl）
+        this.setData({
+          ...update,
+          result: updatedResult,
+        });
       }
     } catch (error) {
       console.error("查询视频状态失败:", error);
-      // 不中断轮询，继续尝试
+      // 不中断，继续串行轮询
+    } finally {
+      const next = (this.data.videoPollCount || 0) + 1;
+      this.setData({ videoPollCount: next });
+      // 仅在本次请求成功时，5秒后进入下一次；最多60次
+      if (
+        requestSucceeded &&
+        this.data.videoStatus !== 2 &&
+        this.data.videoStatus !== 3 &&
+        next < 60
+      ) {
+        this.videoPollingTimer = setTimeout(() => {
+          this.pollVideoStatus();
+        }, 5000);
+      }
+    }
+  },
+
+  /**
+   * 开始图片状态轮询（串行：每次完成后等待5秒再请求，最多60次）
+   */
+  startImagePolling() {
+    // 采用串行轮询：本次请求完成后，再等待5秒触发下一次
+    this.pollImageStatus();
+  },
+
+  /**
+   * 停止图片轮询
+   */
+  stopImagePolling() {
+    if (this.imagePollingTimer) {
+      clearTimeout(this.imagePollingTimer);
+      this.imagePollingTimer = null;
+    }
+  },
+
+  /**
+   * 轮询图片状态：使用 getDiaryDetail 接口
+   */
+  async pollImageStatus() {
+    const { result, imagePollCount, imageLoading } = this.data;
+    if (!imageLoading) return;
+
+    // 达到最大次数后停止
+    if (imagePollCount >= 60) {
+      this.stopImagePolling();
+      this.setData({ imageLoading: false });
+      return;
+    }
+
+    let requestSucceeded = false;
+    try {
+      const dreamService = require("../../services/dream.js");
+      if (!result || !result.postId) {
+        console.warn("图片轮询缺少 postId，停止轮询");
+        this.stopImagePolling();
+        this.setData({ imageLoading: false });
+        return;
+      }
+
+      const response = await dreamService.getDiaryDetail(result.postId);
+      if (response && response.code === 0 && response.data) {
+        requestSucceeded = true;
+        const diaryData = response.data;
+
+        // 处理keywordsJson字符串，转换为数组
+        let keywords = [];
+        if (diaryData.keywordsJson) {
+          try {
+            keywords = JSON.parse(diaryData.keywordsJson);
+          } catch (e) {
+            console.warn("解析keywordsJson失败:", e);
+            keywords = result.keywords || [];
+          }
+        } else {
+          keywords = result.keywords || [];
+        }
+
+        // 归一化结构：保留原有 result 的所有字段，只更新轮询返回的字段
+        const normalized = {
+          ...result, // 先保留原有所有字段
+          // 更新轮询接口返回的字段
+          analysisId: diaryData.analysisId || result.analysisId,
+          postId: diaryData.postId || result.postId,
+          dreamDescription: diaryData.dreamDescription || result.dreamDescription || "",
+          keywords: keywords,
+          interpretation: diaryData.interpretation || result.interpretation || "",
+          imagePrompt: diaryData.imagePrompt || result.imagePrompt || "",
+          // 注意：这里优先使用 API 返回的新值，如果 API 没有返回则保持旧值
+          imageUrl: diaryData.imageUrl !== undefined && diaryData.imageUrl !== null ? diaryData.imageUrl : result.imageUrl,
+          videoPrompt: diaryData.videoPrompt || result.videoPrompt || "",
+          videoUrl: diaryData.videoUrl || result.videoUrl || null,
+          guidingQuestionsJson: diaryData.guidingQuestionsJson || result.guidingQuestionsJson || "",
+          generationType: result.generationType || "image",
+          hasFeedback: result.hasFeedback || false, // 保持原有的hasFeedback值，不从轮询接口同步
+        };
+
+        // 格式化解析内容
+        if (normalized.interpretation) {
+          normalized.interpretationParagraphs = this.formatInterpretation(
+            normalized.interpretation
+          );
+        }
+
+        // 解析疏导性问题JSON（如果存在）
+        if (normalized.guidingQuestionsJson) {
+          try {
+            const guidingQuestions = JSON.parse(normalized.guidingQuestionsJson);
+            if (guidingQuestions.question1) {
+              const questionData = guidingQuestions.question1;
+              const question = questionData.question;
+              const answer = questionData.answer || "";
+              normalized.guidingQuestion1 = question;
+              normalized.guidingQuestion1Answer = answer;
+              if (answer) {
+                normalized.guidingQuestion1 =
+                  question + "\n\n💭 我的思考：\n" + answer;
+              }
+            }
+            if (guidingQuestions.question2) {
+              const questionData = guidingQuestions.question2;
+              const question = questionData.question;
+              const answer = questionData.answer || "";
+              normalized.guidingQuestion2 = question;
+              normalized.guidingQuestion2Answer = answer;
+              if (answer) {
+                normalized.guidingQuestion2 =
+                  question + "\n\n💭 我的思考：\n" + answer;
+              }
+            }
+          } catch (error) {
+            // 解析失败，保持原有值
+          }
+        }
+
+        // 检查 API 是否返回了新的 imageUrl（只有新值才处理，避免使用旧值）
+        const latestImageUrl = diaryData.imageUrl;
+      
+
+        if (latestImageUrl && latestImageUrl.trim()) {
+          // API 返回了新的 imageUrl，转换为本地路径
+          const localPath = await this.ensureLocalImage(latestImageUrl);
+          normalized.imageUrl = localPath || latestImageUrl;
+          this.setData({ result: normalized, imageLoading: false });
+          this.stopImagePolling();
+          return;
+        } else {
+          console.log("轮询数据中没有新的 imageUrl，继续轮询");
+        }
+
+        // 未拿到图片，更新其他字段并继续轮询
+        this.setData({ result: normalized });
+      }
+    } catch (error) {
+      // 静默错误，继续尝试下一次
+      console.warn("图片轮询失败，继续重试:", error);
+    } finally {
+      const nextCount = imagePollCount + 1;
+      this.setData({ imagePollCount: nextCount });
+
+      // 若仍在加载且未达上限，并且请求成功，则5秒后进入下一次轮询
+      if (requestSucceeded && this.data.imageLoading && nextCount < 60) {
+        this.imagePollingTimer = setTimeout(() => {
+          this.pollImageStatus();
+        }, 5000);
+      }
     }
   },
 
@@ -661,8 +1000,6 @@ Page({
       return;
     }
 
-    console.log("开始下载视频:", videoUrl);
-
     // 先检查相册权限
     wx.getSetting({
       success: (res) => {
@@ -685,11 +1022,9 @@ Page({
         wx.authorize({
           scope: "scope.writePhotosAlbum",
           success: () => {
-            console.log("相册权限已授权，开始下载视频");
             this.startVideoDownload(videoUrl);
           },
           fail: () => {
-            console.log("用户拒绝了相册权限");
             wx.showModal({
               title: this.data.i18n.diary.authorizationRequired,
               content: this.data.i18n.diary.allowSaveVideoToAlbum,
@@ -719,16 +1054,13 @@ Page({
     wx.downloadFile({
       url: videoUrl,
       success: (res) => {
-        console.log("视频下载响应:", res);
         wx.hideLoading();
 
         if (res.statusCode === 200) {
-          console.log("视频下载成功，开始保存到相册");
           // 保存到相册
           wx.saveVideoToPhotosAlbum({
             filePath: res.tempFilePath,
             success: () => {
-              console.log("视频保存到相册成功");
               wx.showToast({
                 title: this.data.i18n.diary.saveSuccess,
                 icon: "success",
@@ -738,7 +1070,6 @@ Page({
             fail: (err) => {
               console.error("保存视频失败:", err);
               if (err.errMsg.includes("auth deny")) {
-                console.log("用户拒绝了相册权限");
                 wx.showModal({
                   title: this.data.i18n.diary.authorizationRequired,
                   content: this.data.i18n.diary.allowSaveVideoToAlbum,
@@ -854,7 +1185,6 @@ Page({
    * 个人信息设置完成回调
    */
   onProfileSetupComplete(e) {
-    console.log("个人信息设置完成", e.detail);
     // 更新登录状态
     this.checkLoginStatus();
   },
@@ -870,7 +1200,6 @@ Page({
 
   // 返回首页
   onBackHome() {
-    console.log("点击返回按钮");
     try {
       // 先尝试返回上一页
       wx.navigateBack({
@@ -893,13 +1222,11 @@ Page({
 
   // 关闭页面
   onClose() {
-    console.log("点击关闭按钮");
     try {
       // 先尝试返回上一页
       wx.navigateBack({
         delta: 1,
         fail: (err) => {
-          console.log("navigateBack失败:", err);
           // 如果返回失败，跳转到首页
           wx.reLaunch({
             url: "/pages/index/index",
@@ -1010,10 +1337,6 @@ Page({
   onPublishToCommunity() {
     const { result } = this.data;
 
-    console.log("准备发布，result:", result);
-    console.log("analysisId存在:", !!result?.analysisId);
-    console.log("analysisId值:", result?.analysisId);
-
     if (!result || !result.analysisId) {
       wx.showToast({
         title: this.data.i18n.diary.dataErrorMissingAnalysisId,
@@ -1052,11 +1375,9 @@ Page({
         isPublic: 1,
       };
 
-      console.log("发布接口URL: /dream/posts/publish");
 
       const response = await http.post("/dream/posts/publish", requestData);
 
-      console.log("发布响应:", response);
 
       if (response && response.code === 0) {
         wx.hideLoading();
@@ -1113,13 +1434,6 @@ Page({
   async onSetToPrivate() {
     const { result } = this.data;
 
-    console.log(
-      "准备设置为仅个人可见，analysisId:",
-      result.analysisId,
-      "类型:",
-      typeof result.analysisId
-    );
-
     try {
       // 显示确认弹窗
       const res = await new Promise((resolve) => {
@@ -1148,12 +1462,8 @@ Page({
         isPublic: 0, // 0表示仅个人可见
       };
 
-      console.log("设置私密请求数据:", requestData);
-      console.log("设置私密接口URL: /dream/posts/publish");
 
       const response = await http.post("/dream/posts/publish", requestData);
-
-      console.log("设置私密响应:", response);
 
       if (response && response.code === 0) {
         wx.hideLoading();
@@ -1220,337 +1530,12 @@ Page({
     }
   },
 
-  // 构建海报配置
-  // buildPosterConfig() {
-  //   const { result } = this.data;
-  //   console.log("buildPosterConfig: result data used for config", result);
-
-  //   return new Promise(async (resolve, reject) => {
-  //     try {
-  //       // 只处理二维码
-  //       const qrCodeUrl = await this.getQRCode();
-  //       console.log("二维码处理结果:", qrCodeUrl);
-
-  //       // 处理关键词，转换为字符串
-  //       const keywordsText =
-  //         result.keywords && result.keywords.length > 0
-  //           ? result.keywords.join("、")
-  //           : t("diary.noKeywords");
-
-  //       // 布局与样式参数 - 优化后的设计（去掉梦境内容）
-  //       const cardX = 40;
-  //       const cardWidth = 670;
-  //       const innerX = 60;
-  //       const textWidth = 590;
-  //       const titleFontSize = 48;
-  //       const labelFontSize = 36;
-  //       const keywordFontSize = 26;
-  //       const interpFontSize = 28;
-  //       const keywordLineHeight = 38;
-  //       const interpLineHeight = 40;
-
-  //       // 估算文本所需高度 - 更精确的自适应计算
-  //       const estimateBlockHeight = (
-  //         text,
-  //         fontSize,
-  //         width,
-  //         lineHeight,
-  //         minHeight
-  //       ) => {
-  //         const safeText = (text || "").toString();
-  //         const charsPerLine = Math.max(
-  //           8,
-  //           Math.floor(width / (fontSize * 0.6))
-  //         ); // 调整字符计算
-  //         const lines = Math.max(1, Math.ceil(safeText.length / charsPerLine));
-  //         const height = lines * lineHeight + 20; // 进一步减少内边距
-  //         return Math.max(minHeight, height);
-  //       };
-
-  //       // 处理梦境解析文本，截取前200字符作为摘要
-  //       const fullInterpretation =
-  //         result.interpretation || t("diary.noDreamAnalysis");
-  //       const interpText =
-  //         fullInterpretation.length > 200
-  //           ? fullInterpretation.substring(0, 200) + "..."
-  //           : fullInterpretation;
-
-  //       const keywordBlockHeight = estimateBlockHeight(
-  //         keywordsText,
-  //         keywordFontSize,
-  //         textWidth,
-  //         keywordLineHeight,
-  //         30
-  //       );
-  //       const interpBlockHeight = estimateBlockHeight(
-  //         interpText,
-  //         interpFontSize,
-  //         textWidth,
-  //         interpLineHeight,
-  //         80
-  //       );
-
-  //       // 调整后的布局位置 - 去掉梦境内容，重新布局
-  //       const keywordLabelY = 220; // 关键词标签位置
-  //       const keywordBlockY = keywordLabelY + 30; // 统一30px间距
-  //       const keywordTextY = keywordBlockY + 30; // 统一30px间距
-
-  //       const interpLabelY = keywordTextY + keywordBlockHeight + 40; // 解析标签位置
-  //       const interpBlockY = interpLabelY + 30; // 统一30px间距
-  //       const interpTextY = interpBlockY + 30; // 统一30px间距
-
-  //       const config = {
-  //         width: 750,
-  //         height: 1334,
-  //         backgroundColor: "#FFFFFF", // 纯白背景更简洁
-  //         debug: false,
-  //         texts: [
-  //           // 主标题 - 光爱梦伴
-  //           {
-  //             x: 375,
-  //             y: 120,
-  //             baseLine: "middle",
-  //             textAlign: "center",
-  //             text: t("diary.appName"),
-  //             fontSize: 56,
-  //             color: "#1A1A1A",
-  //             fontWeight: "bold",
-  //             zIndex: 10,
-  //           },
-  //           // 副标题
-  //           {
-  //             x: 375,
-  //             y: 180,
-  //             baseLine: "middle",
-  //             textAlign: "center",
-  //             text: t("diary.aiDreamAnalysis"),
-  //             fontSize: 26,
-  //             color: "#1A1A1A",
-  //             fontWeight: "600",
-  //             zIndex: 10,
-  //           },
-  //           // 关键词标签
-  //           {
-  //             x: cardX,
-  //             y: keywordLabelY,
-  //             baseLine: "top",
-  //             textAlign: "left",
-  //             text: t("diary.keywords"),
-  //             fontSize: 36,
-  //             color: "#1A1A1A",
-  //             fontWeight: "bold",
-  //             zIndex: 10,
-  //           },
-  //           // 关键词文本
-  //           {
-  //             x: innerX,
-  //             y: keywordTextY,
-  //             baseLine: "top",
-  //             textAlign: "left",
-  //             text: keywordsText,
-  //             fontSize: 26,
-  //             color: "#000000",
-  //             width: textWidth,
-  //             lineHeight: 38,
-  //             lineNum: 3,
-  //             zIndex: 10,
-  //           },
-  //           // 梦境解析标签
-  //           {
-  //             x: cardX,
-  //             y: interpLabelY,
-  //             baseLine: "top",
-  //             textAlign: "left",
-  //             text: t("diary.dreamAnalysis"),
-  //             fontSize: 36,
-  //             color: "#1A1A1A",
-  //             fontWeight: "bold",
-  //             zIndex: 10,
-  //           },
-  //           // 梦境解析文本（摘要版本）
-  //           {
-  //             x: innerX,
-  //             y: interpTextY,
-  //             baseLine: "top",
-  //             textAlign: "left",
-  //             text: interpText,
-  //             fontSize: 28,
-  //             color: "#000000",
-  //             width: textWidth,
-  //             lineHeight: 40,
-  //             lineNum: 4,
-  //             zIndex: 10,
-  //           },
-  //         ],
-  //         blocks: [
-  //           // 顶部渐变背景
-  //           {
-  //             x: 0,
-  //             y: 0,
-  //             width: 750,
-  //             height: 200,
-  //             backgroundColor: "rgba(139, 92, 246, 0.03)",
-  //             borderRadius: 0,
-  //             borderWidth: 0,
-  //             borderColor: "transparent",
-  //             zIndex: 0,
-  //           },
-  //           // 去掉所有内容块的白色背景，让内容直接显示在背景图片上
-  //         ],
-  //         images: [],
-  //       };
-
-  //       // 添加背景图片
-  //       config.images.push({
-  //         x: 0,
-  //         y: 0,
-  //         width: 750,
-  //         height: 1334,
-  //         url: "https://dulele.org.cn/images/assest/dreamAnalysisResult.png",
-  //         zIndex: 0,
-  //       });
-
-  //       // 添加接口返回的图片（如果有的话）
-  //       if (result.imageUrl) {
-  //         const imageWidth = 350; // 图片宽度，增加宽度
-  //         const imageHeight = 300; // 图片高度
-  //         const imageX = (750 - imageWidth) / 2; // 水平居中
-  //         // 计算图片位置：在梦境解析内容下方，固定10px间距
-  //         const imageY = interpTextY + interpBlockHeight + 10; // 在梦境解析下方固定10px间距
-
-  //         config.images.push({
-  //           x: imageX,
-  //           y: imageY,
-  //           width: imageWidth,
-  //           height: imageHeight,
-  //           url: result.imageUrl,
-  //           zIndex: 2,
-  //         });
-  //       }
-
-  //       // 智能计算二维码位置，避免与内容重叠
-  //       if (qrCodeUrl) {
-  //         const qrSize = 160; // 二维码尺寸
-  //         const qrX = (750 - qrSize) / 2; // 水平居中
-
-  //         // 计算内容总高度
-  //         const contentEndY = interpTextY + interpBlockHeight;
-  //         const minSpacing = 60; // 最小间距
-  //         // 如果有图片，二维码位置需要在图片下方
-  //         let baseQrY = 1000; // 默认位置
-  //         if (result.imageUrl) {
-  //           // 图片位置 + 图片高度 + 间距
-  //           const imageY = interpTextY + interpBlockHeight + 10; // 使用固定的10px间距
-  //           const imageHeight = 300; // 使用新的图片高度
-  //           baseQrY = imageY + imageHeight + 20; // 图片下方20px间距，保持紧凑布局
-  //         }
-  //         const qrY = Math.max(contentEndY + minSpacing, baseQrY);
-
-  //         // 检查是否会超出画布底部，确保兼容不同手机
-  //         const qrBottomY = qrY + qrSize + 40; // 二维码底部 + 说明文字高度
-  //         let finalQrY = qrY;
-
-  //         if (qrBottomY > 1334) {
-  //           console.warn("二维码位置可能超出画布，调整位置");
-  //           // 如果超出，调整到画布底部，确保在所有设备上都能显示
-  //           finalQrY = Math.max(1334 - qrSize - 40, 800); // 最小位置800px，确保不会太靠上
-  //           console.log("调整后的二维码Y位置:", finalQrY);
-  //         }
-
-  //         // 添加调试信息，帮助排查问题
-  //         console.log("海报布局调试信息:", {
-  //           interpTextY: interpTextY,
-  //           interpBlockHeight: interpBlockHeight,
-  //           imageY: result.imageUrl
-  //             ? interpTextY + interpBlockHeight + 10
-  //             : null,
-  //           qrY: qrY,
-  //           finalQrY: finalQrY,
-  //           hasImage: !!result.imageUrl,
-  //         });
-
-  //         console.log("二维码位置信息:", {
-  //           contentEndY,
-  //           calculatedQrY: qrY,
-  //           finalQrY,
-  //           qrBottomY: finalQrY + qrSize + 40,
-  //           canvasHeight: 1334,
-  //         });
-
-  //         // 二维码上方说明文字
-  //         config.texts.push({
-  //           x: 375,
-  //           y: finalQrY - 30,
-  //           baseLine: "middle",
-  //           textAlign: "center",
-  //           text: t("result.scanForMore"),
-  //           fontSize: 20,
-  //           color: "#6B7280",
-  //           fontWeight: "normal",
-  //           zIndex: 10,
-  //         });
-
-  //         // 小程序码图
-  //         config.images.push({
-  //           x: qrX,
-  //           y: finalQrY,
-  //           width: qrSize,
-  //           height: qrSize,
-  //           url: qrCodeUrl,
-  //           zIndex: 3,
-  //         });
-
-  //         // 二维码下方说明文字
-  //         config.texts.push({
-  //           x: 375,
-  //           y: finalQrY + qrSize + 20,
-  //           baseLine: "middle",
-  //           textAlign: "center",
-  //           text: t("result.longPressToScan"),
-  //           fontSize: 20,
-  //           color: "#6B7280",
-  //           fontWeight: "normal",
-  //           zIndex: 10,
-  //         });
-  //       }
-
-  //       this.setData({
-  //         posterConfig: config,
-  //       });
-  //       console.log(
-  //         "buildPosterConfig: final posterConfig",
-  //         this.data.posterConfig
-  //       );
-  //       resolve(config);
-  //     } catch (error) {
-  //       console.error("构建海报配置失败:", error);
-  //       // 即使处理图片失败，也尝试生成不带图片的海报
-  //       try {
-  //         const config = await this.buildPosterConfigWithoutQR();
-  //         resolve(config);
-  //       } catch (fallbackError) {
-  //         console.error("生成备用海报配置也失败:", fallbackError);
-  //         resolve({
-  //           width: 750,
-  //           height: 1334,
-  //           backgroundColor: "#8B5CF6",
-  //           debug: false,
-  //           texts: [],
-  //           blocks: [],
-  //           images: [],
-  //         });
-  //       }
-  //     }
-  //   });
-  // },
-
   // 获取小程序码
   async getQRCode() {
     try {
       const config = require("../../config/env.js");
       // 构建小程序码URL（修正为 /auth/wechat/mini）
       const qrCodeUrl = `${config.baseURL}/auth/wechat/mini?path=pages/index/index`;
-      console.log("小程序码URL:", qrCodeUrl);
 
       // 先清理旧的二维码文件，避免存储空间累积
       this.cleanupOldQRFiles();
@@ -1652,10 +1637,8 @@ Page({
         header: token ? { Authorization: `Bearer ${token}` } : {},
         success: (res) => {
           if (res.statusCode === 200 && res.tempFilePath) {
-            console.log("二维码下载到临时目录成功:", res.tempFilePath);
             resolve(res.tempFilePath);
           } else {
-            console.warn("二维码下载失败，状态码:", res.statusCode);
             resolve(null);
           }
         },
@@ -1986,8 +1969,6 @@ Page({
     this.setData({ savingAnswers: true });
 
     try {
-      console.log("保存疏导性问题回答:", { answer1, answer2 });
-
       const http = require("../../services/http.js");
       const requestData = {
         analysisId: result.analysisId,
@@ -2005,8 +1986,6 @@ Page({
         "/dream/analysis/save-answers",
         requestData
       );
-
-      console.log("保存回答响应:", response);
 
       if (response && response.code === 0) {
         wx.showToast({
@@ -2107,12 +2086,6 @@ Page({
     this.setData({ submittingFeedback: true });
 
     try {
-      console.log("提交反馈:", {
-        rating: feedbackRating,
-        content: feedbackContent,
-        postId: result.postId,
-      });
-
       const http = require("../../services/http.js");
       const requestData = {
         content: feedbackContent,
@@ -2125,8 +2098,6 @@ Page({
       }
 
       const response = await http.post("/user/feedback", requestData);
-
-      console.log("反馈提交响应:", response);
 
       if (response && response.code === 0) {
         wx.showToast({
@@ -2175,18 +2146,14 @@ Page({
   ensureLocalImage(remoteUrl) {
     return new Promise((resolve) => {
       if (!remoteUrl) {
-        console.log("ensureLocalImage: 无图片URL");
         resolve(null);
         return;
       }
-
-      console.log("ensureLocalImage: 开始处理图片", remoteUrl);
 
       try {
         wx.downloadFile({
           url: remoteUrl,
           success: (res) => {
-            console.log("downloadFile success:", res);
             if (res.statusCode === 200 && res.tempFilePath) {
               const temp = res.tempFilePath;
               // 统一写入 USER_DATA_PATH，得到 wxfile:// 路径
@@ -2262,7 +2229,6 @@ Page({
             wx.getImageInfo({
               src: remoteUrl,
               success: (info) => {
-                console.log("getImageInfo success (fallback):", info);
                 const local = info.path || info.src;
                 if (!local) return resolve(null);
                 try {
@@ -2327,9 +2293,37 @@ Page({
   // 构建 Painter 海报配置
   async buildPainterPalette() {
     const { result } = this.data;
-    console.log("构建 Painter 海报配置:", result);
 
     try {
+      // 如果图片存在，确保转换为本地路径（Painter 组件需要本地路径）
+      let localImageUrl = null;
+      if (result && result.imageUrl) {
+        // 检查是否是远程 URL
+        const isRemoteUrl = typeof result.imageUrl === 'string' && (result.imageUrl.startsWith('http://') || result.imageUrl.startsWith('https://'));
+        if (isRemoteUrl) {
+          try {
+            localImageUrl = await this.ensureLocalImage(result.imageUrl);
+            // 如果转换成功，更新 result 中的 imageUrl
+            if (localImageUrl) {
+              result.imageUrl = localImageUrl;
+              // 同步更新到 data
+              this.setData({ "result.imageUrl": localImageUrl });
+            } else {
+              console.warn("图片路径转换失败，使用原始 URL");
+              localImageUrl = result.imageUrl; // 转换失败时使用原始 URL
+            }
+          } catch (error) {
+            console.error("图片路径转换异常:", error);
+            localImageUrl = result.imageUrl; // 异常时使用原始 URL
+          }
+        } else {
+          // 已经是本地路径
+          localImageUrl = result.imageUrl;
+        }
+      } else {
+        console.warn("海报生成时没有找到图片 URL，result:", result, "result.imageUrl:", result?.imageUrl);
+      }
+
       // 处理文本内容，确保不会过长
       const dreamText = (
         result.dreamDescription || this.data.i18n.diary.dreamContent
@@ -2368,7 +2362,6 @@ Page({
         });
         if (downloadResult.statusCode === 200) {
           backgroundImageUrl = downloadResult.tempFilePath;
-          console.log("背景图片下载成功:", backgroundImageUrl);
         }
       } catch (error) {
         console.error("背景图片下载失败:", error);
@@ -2380,7 +2373,6 @@ Page({
       let qrCodeUrl = null;
       try {
         qrCodeUrl = await this.getQRCode();
-        console.log("二维码获取结果:", qrCodeUrl);
       } catch (error) {
         console.error("获取二维码失败:", error);
       }
@@ -2509,12 +2501,12 @@ Page({
                 },
               ]
             : []),
-          // AI生成的梦境图片（如果有）
-          ...(result.imageUrl
+          // AI生成的梦境图片（如果有）- 使用本地路径
+          ...(localImageUrl
             ? [
                 {
                   type: "image",
-                  url: result.imageUrl,
+                  url: localImageUrl, // 使用转换后的本地路径
                   css: {
                     top: "630rpx",
                     left: "200rpx",
@@ -2592,7 +2584,6 @@ Page({
         painterPalette: palette,
       });
 
-      console.log("Painter 配置设置完成");
     } catch (error) {
       console.error("构建 Painter 配置失败:", error);
       throw error;
@@ -2602,7 +2593,6 @@ Page({
   // Painter 图片生成成功
   onPainterImgOK(e) {
     const { path } = e.detail;
-    console.log("Painter 图片生成成功:", path);
 
     wx.hideLoading();
 

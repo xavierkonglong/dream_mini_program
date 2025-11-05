@@ -416,6 +416,13 @@
   border-radius: 24rpx;
 }
 
+.image-status-card{
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+}
+
 /* 视频操作按钮 */
 .video-actions {
   margin-top: 20rpx;

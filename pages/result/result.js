@@ -40,12 +40,6 @@ Page({
   },
 
   onLoad(options) {
-    console.log("结果页加载", options);
-    console.log(
-      "背景图片URL:",
-      this.data.imageUrls.BACKGROUNDS.DREAM_ANALYSIS_RESULT
-    );
-
     // 初始化多语言
     this.initI18n();
 
@@ -55,10 +49,6 @@ Page({
     if (options.data) {
       try {
         let result = JSON.parse(decodeURIComponent(options.data));
-        console.log("解析结果数据:", result);
-        console.log("analysisId:", result.analysisId);
-        console.log("analysisId类型:", typeof result.analysisId);
-        console.log("generationType:", result.generationType);
 
         // 归一化：兼容新蛇形扁平结构，转成 camelCase
         result = {
@@ -88,15 +78,9 @@ Page({
         // 解析疏导性问题JSON
         if (result.guidingQuestionsJson) {
           try {
-            console.log(
-              "result.js - 原始guidingQuestionsJson:",
-              result.guidingQuestionsJson
-            );
+         
             const guidingQuestions = JSON.parse(result.guidingQuestionsJson);
-            console.log(
-              "result.js - 解析后的guidingQuestions:",
-              guidingQuestions
-            );
+  
 
             // 处理问题1和问题2（不依赖顺序）
             const questionKeys = Object.keys(guidingQuestions);
@@ -150,7 +134,6 @@ Page({
         const videoTaskId = result.videoTaskId || null;
 
         if (isVideoType) {
-          console.log("视频类型，任务ID:", videoTaskId);
           // 先落盘 result，避免轮询时取不到 analysisId
           this.setData({
             result,
@@ -227,7 +210,7 @@ Page({
     if (!imageLoading) return;
 
     // 达到最大次数后停止
-    if (imagePollCount >= 10) {
+    if (imagePollCount >= 60) {
       this.stopImagePolling();
       this.setData({ imageLoading: false });
       return;
@@ -289,7 +272,7 @@ Page({
       this.setData({ imagePollCount: nextCount });
 
       // 若仍在加载且未达上限，并且请求成功，则3秒后进入下一次轮询
-      if (requestSucceeded && this.data.imageLoading && nextCount < 10) {
+      if (requestSucceeded && this.data.imageLoading && nextCount < 60) {
         this.imagePollingTimer = setTimeout(() => {
           this.pollImageStatus();
         }, 3000);
@@ -381,6 +364,8 @@ Page({
           saveAnswers: t("result.saveAnswers"),
           saving: t("result.saving"),
           aiImage: t("result.aiImage"),
+          imageGenerating: t("result.imageGenerating"),
+          imageGeneratingTip: t("result.imageGeneratingTip"),
           videoGenerating: t("result.videoGenerating"),
           videoGeneratingTip: t("result.videoGeneratingTip"),
           videoFailed: t("result.videoFailed"),
@@ -429,18 +414,15 @@ Page({
   },
 
   onShow() {
-    console.log("结果页显示");
     this.checkLoginStatus();
 
     // 强制更新标题
     this.initI18n();
     const newTitle = t("pageTitle.result");
-    console.log("结果页设置新标题:", newTitle);
     wx.setNavigationBarTitle({ title: newTitle });
   },
 
   onHide() {
-    console.log("结果页隐藏");
     // 停止视频轮询
     this.stopVideoPolling();
     // 停止图片轮询
@@ -448,7 +430,6 @@ Page({
   },
 
   onUnload() {
-    console.log("结果页卸载");
     // 停止视频轮询
     this.stopVideoPolling();
     // 停止图片轮询
@@ -474,7 +455,6 @@ Page({
    * 开始视频状态轮询（串行：每次完成后等待5秒再请求，最多10次）
    */
   startVideoPolling() {
-    console.log("开始视频轮询");
     // 首次进入先延迟100秒再开始轮询
     this.videoPollingTimer = setTimeout(() => {
       this.pollVideoStatus();
@@ -486,7 +466,6 @@ Page({
    */
   stopVideoPolling() {
     if (this.videoPollingTimer) {
-      console.log("停止视频轮询");
       clearTimeout(this.videoPollingTimer);
       this.videoPollingTimer = null;
     }
@@ -504,8 +483,8 @@ Page({
       return;
     }
 
-    // 达到最大次数后停止（最多20次）
-    if (videoPollCount >= 20) {
+    // 达到最大次数后停止（最多50次）
+    if (videoPollCount >= 50) {
       this.stopVideoPolling();
       return;
     }
@@ -585,12 +564,12 @@ Page({
     } finally {
       const next = (this.data.videoPollCount || 0) + 1;
       this.setData({ videoPollCount: next });
-      // 仅在本次请求成功时，5秒后进入下一次；最多20次
+      // 仅在本次请求成功时，5秒后进入下一次；最多50次
       if (
         requestSucceeded &&
         this.data.videoStatus !== "completed" &&
         this.data.videoStatus !== "failed" &&
-        next < 20
+        next < 50
       ) {
         this.videoPollingTimer = setTimeout(() => {
           this.pollVideoStatus();
@@ -630,17 +609,14 @@ Page({
   generateVideoThumbnail(videoUrl) {
     return new Promise((resolve, reject) => {
       try {
-        console.log("开始生成视频第一帧:", videoUrl);
 
         // 使用微信小程序的 getVideoInfo API 获取视频信息
         wx.getVideoInfo({
           src: videoUrl,
           success: (res) => {
-            console.log("视频信息获取成功:", res);
 
             // 如果视频有 poster 属性，直接使用
             if (res.poster) {
-              console.log("使用视频自带的poster:", res.poster);
               resolve(res.poster);
               return;
             }
@@ -649,19 +625,16 @@ Page({
             this.getVideoFirstFrame(videoUrl)
               .then(resolve)
               .catch((error) => {
-                console.log("获取视频第一帧失败，使用默认图片:", error);
                 // 降级到默认图片
                 this.getDefaultThumbnail().then(resolve).catch(reject);
               });
           },
           fail: (error) => {
-            console.log("获取视频信息失败:", error);
             // 降级到默认图片
             this.getDefaultThumbnail().then(resolve).catch(reject);
           },
         });
       } catch (error) {
-        console.error("生成视频封面异常:", error);
         // 降级到默认图片
         this.getDefaultThumbnail().then(resolve).catch(reject);
       }
@@ -702,22 +675,18 @@ Page({
                   wx.canvasToTempFilePath({
                     canvas: canvas,
                     success: (res) => {
-                      console.log("视频第一帧生成成功:", res.tempFilePath);
                       resolve(res.tempFilePath);
                     },
                     fail: (err) => {
-                      console.error("导出视频第一帧失败:", err);
                       reject(err);
                     },
                   });
                 } catch (error) {
-                  console.error("绘制视频第一帧失败:", error);
                   reject(error);
                 }
               };
 
               video.onerror = (error) => {
-                console.error("视频加载失败:", error);
                 reject(error);
               };
             } else {
@@ -821,7 +790,6 @@ Page({
       return;
     }
 
-    console.log("开始下载视频:", videoUrl);
 
     // 先检查相册权限
     wx.getSetting({
@@ -845,11 +813,9 @@ Page({
         wx.authorize({
           scope: "scope.writePhotosAlbum",
           success: () => {
-            console.log("相册权限已授权，开始下载视频");
             this.startVideoDownload(videoUrl);
           },
           fail: () => {
-            console.log("用户拒绝了相册权限");
             wx.showModal({
               title: this.data.i18n.result.needAuth,
               content: this.data.i18n.result.allowSaveVideo,
@@ -879,16 +845,13 @@ Page({
     wx.downloadFile({
       url: videoUrl,
       success: (res) => {
-        console.log("视频下载响应:", res);
         wx.hideLoading();
 
         if (res.statusCode === 200) {
-          console.log("视频下载成功，开始保存到相册");
           // 保存到相册
           wx.saveVideoToPhotosAlbum({
             filePath: res.tempFilePath,
             success: () => {
-              console.log("视频保存到相册成功");
               wx.showToast({
                 title: this.data.i18n.result.saveSuccess,
                 icon: "success",
@@ -898,7 +861,6 @@ Page({
             fail: (err) => {
               console.error("保存视频失败:", err);
               if (err.errMsg.includes("auth deny")) {
-                console.log("用户拒绝了相册权限");
                 wx.showModal({
                   title: this.data.i18n.result.needAuth,
                   content: this.data.i18n.result.allowSaveVideo,
@@ -910,7 +872,6 @@ Page({
                   },
                 });
               } else {
-                console.error("保存视频失败，错误信息:", err.errMsg);
                 wx.showToast({
                   title: this.data.i18n.result.saveFailed,
                   icon: "error",
@@ -920,7 +881,6 @@ Page({
             },
           });
         } else {
-          console.error("视频下载失败，状态码:", res.statusCode);
           wx.showToast({
             title: this.data.i18n.result.downloadFailed,
             icon: "error",
@@ -929,7 +889,6 @@ Page({
         }
       },
       fail: (err) => {
-        console.error("视频下载失败，详细错误:", err);
         wx.hideLoading();
 
         // 根据错误类型提供更具体的提示
@@ -1014,7 +973,6 @@ Page({
    * 个人信息设置完成回调
    */
   onProfileSetupComplete(e) {
-    console.log("个人信息设置完成", e.detail);
     // 更新登录状态
     this.checkLoginStatus();
   },
@@ -1030,13 +988,11 @@ Page({
 
   // 返回首页
   onBackHome() {
-    console.log("点击返回按钮");
     try {
       // 先尝试返回上一页
       wx.navigateBack({
         delta: 1,
         fail: (err) => {
-          console.log("navigateBack失败:", err);
           // 如果返回失败，跳转到首页
           wx.reLaunch({
             url: "/pages/index/index",
@@ -1054,13 +1010,11 @@ Page({
 
   // 关闭页面
   onClose() {
-    console.log("点击关闭按钮");
     try {
       // 先尝试返回上一页
       wx.navigateBack({
         delta: 1,
         fail: (err) => {
-          console.log("navigateBack失败:", err);
           // 如果返回失败，跳转到首页
           wx.reLaunch({
             url: "/pages/index/index",
@@ -1171,10 +1125,6 @@ Page({
   onPublishToCommunity() {
     const { result } = this.data;
 
-    console.log("准备发布，result:", result);
-    console.log("analysisId存在:", !!result?.analysisId);
-    console.log("analysisId值:", result?.analysisId);
-
     if (!result || !result.analysisId) {
       wx.showToast({
         title: this.data.i18n.result.dataErrorMissingId,
@@ -1201,12 +1151,6 @@ Page({
   async publishToCommunity() {
     const { result } = this.data;
 
-    console.log(
-      "准备发布，analysisId:",
-      result.analysisId,
-      "类型:",
-      typeof result.analysisId
-    );
 
     try {
       // 显示加载提示
@@ -1221,12 +1165,10 @@ Page({
         isPublic: 1,
       };
 
-      console.log("发布请求数据:", requestData);
-      console.log("发布接口URL: /dream/posts/publish");
 
       const response = await http.post("/dream/posts/publish", requestData);
 
-      console.log("发布响应:", response);
+
 
       if (response && response.code === 0) {
         wx.hideLoading();
@@ -1350,7 +1292,6 @@ Page({
   // 构建 Painter 海报配置
   async buildPainterPalette() {
     const { result } = this.data;
-    console.log("构建 Painter 海报配置:", result);
 
     try {
       // 处理文本内容，确保不会过长
@@ -1391,7 +1332,6 @@ Page({
         });
         if (downloadResult.statusCode === 200) {
           backgroundImageUrl = downloadResult.tempFilePath;
-          console.log("背景图片下载成功:", backgroundImageUrl);
         }
       } catch (error) {
         console.error("背景图片下载失败:", error);
@@ -1403,7 +1343,6 @@ Page({
       let qrCodeUrl = null;
       try {
         qrCodeUrl = await this.getQRCode();
-        console.log("二维码获取结果:", qrCodeUrl);
       } catch (error) {
         console.error("获取二维码失败:", error);
       }
@@ -1615,7 +1554,6 @@ Page({
         painterPalette: palette,
       });
 
-      console.log("Painter 配置设置完成");
     } catch (error) {
       console.error("构建 Painter 配置失败:", error);
       throw error;
@@ -1625,7 +1563,6 @@ Page({
   // Painter 图片生成成功
   onPainterImgOK(e) {
     const { path } = e.detail;
-    console.log("Painter 图片生成成功:", path);
 
     wx.hideLoading();
 
@@ -1689,13 +1626,11 @@ Page({
   // 构建海报配置
   buildPosterConfig() {
     const { result } = this.data;
-    console.log("buildPosterConfig: result data used for config", result);
 
     return new Promise(async (resolve, reject) => {
       try {
         // 只处理二维码
         const qrCodeUrl = await this.getQRCode();
-        console.log("二维码处理结果:", qrCodeUrl);
 
         // 处理关键词，转换为字符串
         const keywordsText =
@@ -1891,7 +1826,6 @@ Page({
         });
 
         // 生成纯文字海报，不包含任何图片
-        console.log("📝 生成纯文字海报");
 
         // 智能计算二维码位置，避免与内容重叠
         if (qrCodeUrl) {
@@ -1911,16 +1845,7 @@ Page({
             console.warn("二维码位置可能超出画布，调整位置");
             // 如果超出，调整到画布底部
             finalQrY = 1334 - qrSize - 40;
-            console.log("调整后的二维码Y位置:", finalQrY);
           }
-
-          console.log("二维码位置信息:", {
-            contentEndY,
-            calculatedQrY: qrY,
-            finalQrY,
-            qrBottomY: finalQrY + qrSize + 40,
-            canvasHeight: 1334,
-          });
 
           // 二维码上方说明文字
           config.texts.push({
@@ -1962,12 +1887,7 @@ Page({
         this.setData({
           posterConfig: config,
         });
-        console.log(
-          "buildPosterConfig: final posterConfig",
-          this.data.posterConfig
-        );
-        console.log("海报配置中的图片数量:", config.images.length);
-        console.log("海报配置中的图片详情:", config.images);
+       
         resolve(config);
       } catch (error) {
         console.error("构建海报配置失败:", error);
@@ -1997,7 +1917,6 @@ Page({
       const config = require("../../config/env.js");
       // 构建小程序码URL（修正为 /auth/wechat/mini）
       const qrCodeUrl = `${config.baseURL}/auth/wechat/mini?path=pages/index/index`;
-      console.log("小程序码URL:", qrCodeUrl);
 
       // 先清理旧的二维码文件，避免存储空间累积
       this.cleanupOldQRFiles();
@@ -2132,15 +2051,12 @@ Page({
         header: token ? { Authorization: `Bearer ${token}` } : {},
         success: (res) => {
           if (res.statusCode === 200 && res.tempFilePath) {
-            console.log("二维码下载到临时目录成功:", res.tempFilePath);
             resolve(res.tempFilePath);
           } else {
-            console.warn("二维码下载失败，状态码:", res.statusCode);
             resolve(null);
           }
         },
         fail: (err) => {
-          console.warn("二维码下载失败:", err);
           resolve(null);
         },
       });
@@ -2353,17 +2269,13 @@ Page({
     this.setData({
       posterConfig: config,
     });
-    console.log(
-      "buildPosterConfigWithoutQR: final posterConfig",
-      this.data.posterConfig
-    );
+
     return config;
   },
 
   // 海报生成成功回调
   onPosterSuccess(e) {
     const { detail } = e;
-    console.log("海报生成成功:", detail);
     wx.hideLoading();
 
     // 保存到相册
@@ -2498,7 +2410,6 @@ Page({
     this.setData({ savingAnswers: true });
 
     try {
-      console.log("保存疏导性问题回答:", { answer1, answer2 });
 
       const http = require("../../services/http.js");
       const requestData = {
@@ -2512,7 +2423,6 @@ Page({
         requestData
       );
 
-      console.log("保存回答响应:", response);
 
       if (response && response.code === 0) {
         wx.showToast({
@@ -2582,11 +2492,6 @@ Page({
     this.setData({ submittingFeedback: true });
 
     try {
-      console.log("提交反馈:", {
-        rating: feedbackRating,
-        content: feedbackContent,
-        analysisId: result.analysisId,
-      });
 
       const http = require("../../services/http.js");
       const requestData = {
@@ -2601,7 +2506,6 @@ Page({
 
       const response = await http.post("/user/feedback", requestData);
 
-      console.log("反馈提交响应:", response);
 
       if (response && response.code === 0) {
         wx.showToast({
@@ -2672,12 +2576,10 @@ Page({
   ensureLocalImage(remoteUrl) {
     return new Promise((resolve) => {
       if (!remoteUrl) {
-        console.log("ensureLocalImage: 无图片URL");
         resolve(null);
         return;
       }
 
-      console.log("ensureLocalImage: 开始处理图片", remoteUrl);
 
       // 检查是否是本地文件路径
       if (
@@ -2685,7 +2587,6 @@ Page({
         remoteUrl.startsWith("file://") ||
         remoteUrl.startsWith("wxfile://")
       ) {
-        console.log("检测到本地文件路径，需要转换为可用的格式:", remoteUrl);
         // 使用转换方法
         const convertedUrl = this.convertImageUrlForPoster(remoteUrl);
         resolve(convertedUrl);
@@ -2700,7 +2601,6 @@ Page({
 
           // 如果使用超过80%，先清理
           if (usedSize / limitSize > 0.8) {
-            console.log("存储空间不足，清理中...");
             this.clearStorage();
           }
 
@@ -2718,14 +2618,12 @@ Page({
   // 下载图片的通用方法
   downloadImage(remoteUrl, resolve) {
     try {
-      console.log("downloadImage: 开始下载图片", remoteUrl);
 
       // 检查是否是本地文件路径
       if (
         remoteUrl.startsWith("http://usr/") ||
         remoteUrl.startsWith("file://")
       ) {
-        console.log("检测到本地文件路径，需要转换格式:", remoteUrl);
         // 使用转换方法
         const convertedUrl = this.convertImageUrlForPoster(remoteUrl);
         resolve(convertedUrl);
@@ -2736,38 +2634,31 @@ Page({
         url: remoteUrl,
         timeout: 30000, // 30秒超时
         success: (res) => {
-          console.log("downloadFile success:", res);
           if (res.statusCode === 200 && res.tempFilePath) {
             // 验证文件是否有效
             wx.getFileInfo({
               filePath: res.tempFilePath,
               success: (fileInfo) => {
-                console.log("文件信息:", fileInfo);
                 if (fileInfo.size > 0) {
                   // 将临时文件复制到持久存储目录
                   this.persistImageFile(res.tempFilePath, resolve);
                 } else {
-                  console.log("文件大小为0，尝试getImageInfo");
                   this.getImageInfo(remoteUrl, resolve);
                 }
               },
               fail: (err) => {
-                console.log("获取文件信息失败:", err);
                 this.getImageInfo(remoteUrl, resolve);
               },
             });
           } else {
-            console.log("ensureLocalImage: 下载失败，状态码:", res.statusCode);
             this.getImageInfo(remoteUrl, resolve);
           }
         },
         fail: (err) => {
-          console.log("downloadFile fail:", err);
           this.getImageInfo(remoteUrl, resolve);
         },
       });
     } catch (e) {
-      console.log("downloadImage exception:", e);
       resolve(null);
     }
   },
@@ -2783,7 +2674,6 @@ Page({
     wx.getImageInfo({
       src: remoteUrl,
       success: (info) => {
-        console.log("getImageInfo success:", info);
         const local = info.path || info.src;
         if (!local) {
           resolve(null);
@@ -2793,7 +2683,6 @@ Page({
         resolve(local);
       },
       fail: (err) => {
-        console.log("getImageInfo fail:", err);
         resolve(null);
       },
     });

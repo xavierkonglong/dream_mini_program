@@ -101,12 +101,23 @@
     <!-- AI梦境图像（仅文生图模式） -->
     <view class="image-section" wx:if="{{!isVideoType && (result.imageUrl || imageLoading)}}">
       <view class="section-title">{{i18n.result.aiImage}}</view>
-      <view class="image-container">
-        <view class="image-loading" wx:if="{{imageLoading && !result.imageUrl}}">
-          <van-loading type="spinner" size="32px" color="#8B5CF6">{{i18n.result.loading}}</van-loading>
+      
+      <!-- 图片生成中状态 -->
+      <view class="image-status-container" wx:if="{{imageLoading && !result.imageUrl}}">
+        <view class="cloud-card image-status-card">
+          <view class="status-icon">
+            <van-loading type="spinner" size="32px" color="#8B5CF6" />
+          </view>
+          <view class="status-text">{{i18n.result.imageGenerating}}</view>
+          <view class="status-tip">{{i18n.result.imageGeneratingTip}}</view>
         </view>
-        <image wx:elif="{{result.imageUrl}}" class="dream-image" src="{{result.imageUrl}}" mode="aspectFill" bindtap="onPreviewImage" />
       </view>
+
+      <!-- 图片显示 -->
+      <view class="image-container" wx:elif="{{result.imageUrl}}">
+        <image class="dream-image" src="{{result.imageUrl}}" mode="aspectFill" bindtap="onPreviewImage" />
+      </view>
+      
       <view class="image-description" wx:if="{{result.imagePrompt}}">
         <text class="description-text" user-select="{{true}}">{{result.imagePrompt}}</text>
       </view>
@@ -125,6 +136,10 @@
           <view class="status-text">{{i18n.result.videoGenerating}}</view>
           <view class="status-tip">{{i18n.result.videoGeneratingTip}}</view>
         </view>
+        <!-- 视频提示词描述 -->
+        <view class="video-description" wx:if="{{result.videoPrompt}}">
+          <text class="description-text" user-select="{{true}}">{{result.videoPrompt}}</text>
+        </view>
       </view>
 
       <!-- 视频生成失败状态 -->
@@ -133,6 +148,10 @@
           <view class="status-icon">❌</view>
           <view class="status-text">{{i18n.result.videoFailed}}</view>
           <view class="status-tip">{{i18n.result.videoFailedTip}}</view>
+        </view>
+        <!-- 视频提示词描述 -->
+        <view class="video-description" wx:if="{{result.videoPrompt}}">
+          <text class="description-text" user-select="{{true}}">{{result.videoPrompt}}</text>
         </view>
       </view>
 
