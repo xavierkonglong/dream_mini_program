@@ -36,6 +36,14 @@ Page({
     likesPageSize: 20, // 每页数量
     likesHasMore: true, // 是否还有更多数据
     likesLoading: false, // 是否正在加载
+    // 缓存相关：记录各标签页上次加载时间（毫秒时间戳）
+    lastLoadTimes: {
+      diary: 0,
+      collection: 0,
+      likes: 0,
+    },
+    // 缓存有效期（毫秒），5分钟
+    cacheExpireTime: 5 * 60 * 1000,
   },
 
   /**
@@ -152,8 +160,8 @@ Page({
     this.listenToUnauthorized();
 
     if (this.data.isLoggedIn) {
-      // 每次进入页面时，如果已登录，都加载当前选中标签页的数据
-      this.loadCurrentTabData();
+      // 检查是否需要重新加载数据（缓存机制）
+      this.loadCurrentTabDataIfNeeded();
     }
   },
 
@@ -186,6 +194,23 @@ Page({
    * 处理401未授权事件
    */
   handleUnauthorized(data) {
+    // 更新登录状态（因为 clearLoginInfo 已经清除登录信息）
+    this.checkLoginStatus();
+    
+    // 清空列表数据，避免显示空状态
+    this.setData({
+      dreamDiaryList: [],
+      collectionList: [],
+      likesList: [],
+      diaryHasMore: false,
+      collectionHasMore: false,
+      likesHasMore: false,
+      diaryLoading: false,
+      collectionLoading: false,
+      likesLoading: false,
+    });
+    
+    // 打开登录弹窗
     this.setData({
       showLoginModal: true,
     });
@@ -194,7 +219,20 @@ Page({
   /**
    * 用户点击右上角分享
    */
-  onShareAppMessage() {
+  async onShareAppMessage() {
+    // 如果用户已登录，调用分享接口记录积分（微信转发，每天仅首次分享有效）
+    if (this.data.isLoggedIn) {
+      try {
+        const http = require("../../services/http.js");
+        await http.post("/dream/share", {}, {
+          showLoading: false // 分享时不显示loading，避免影响用户体验
+        });
+      } catch (error) {
+        // 分享接口调用失败不影响分享功能，只记录错误
+        console.error("分享积分记录失败:", error);
+      }
+    }
+    
     return {
       title: t("app.shareTitle"),
       path: "/pages/index/index",
@@ -204,7 +242,20 @@ Page({
   /**
    * 用户点击右上角分享到朋友圈
    */
-  onShareTimeline() {
+  async onShareTimeline() {
+    // 如果用户已登录，调用分享接口记录积分（微信转发，每天仅首次分享有效）
+    if (this.data.isLoggedIn) {
+      try {
+        const http = require("../../services/http.js");
+        await http.post("/dream/share", {}, {
+          showLoading: false // 分享时不显示loading，避免影响用户体验
+        });
+      } catch (error) {
+        // 分享接口调用失败不影响分享功能，只记录错误
+        console.error("分享积分记录失败:", error);
+      }
+    }
+    
     return {
       title: t("app.timelineTitle"),
       imageUrl: "", // 可以设置分享图片
@@ -286,8 +337,8 @@ Page({
     // 更新页面状态
     this.checkLoginStatus();
 
-    // 加载用户数据
-    this.loadCurrentTabData();
+    // 登录成功后强制刷新数据
+    this.loadCurrentTabData(true);
 
     // 关闭弹窗
     this.setData({
@@ -310,6 +361,18 @@ Page({
     this.setData({
       showProfileSetupModal: false,
     });
+  },
+
+  /**
+   * 跳过个人信息设置
+   */
+  onProfileSetupSkip() {
+    logger.info('用户跳过个人信息设置');
+    this.setData({
+      showProfileSetupModal: false,
+    });
+    // 正常处理登录成功
+    this.handleLoginSuccess();
   },
 
   /**
@@ -361,25 +424,42 @@ Page({
       activeTab: tab,
     });
 
-    // 切换标签时总是重新加载数据
-    this.loadCurrentTabData();
+    // 切换标签时检查是否需要加载数据（带缓存机制）
+    this.loadCurrentTabDataIfNeeded();
   },
 
   /**
    * 加载当前标签页数据
+   * @param {boolean} forceRefresh - 是否强制刷新（忽略缓存）
    */
-  loadCurrentTabData() {
+  loadCurrentTabData(forceRefresh = false) {
     switch (this.data.activeTab) {
       case "diary":
-        this.loadDreamDiary();
+        this.loadDreamDiary(false, forceRefresh);
         break;
       case "collection":
-        this.loadCollection();
+        this.loadCollection(false, forceRefresh);
         break;
       case "likes":
-        this.loadLikes();
+        this.loadLikes(false, forceRefresh);
         break;
     }
+  },
+
+  /**
+   * 检查是否需要加载当前标签页数据（带缓存机制）
+   */
+  loadCurrentTabDataIfNeeded() {
+    const activeTab = this.data.activeTab;
+    const lastLoadTime = this.data.lastLoadTimes[activeTab] || 0;
+    const now = Date.now();
+    const timeSinceLastLoad = now - lastLoadTime;
+
+    // 如果超过缓存时间或强制刷新，则重新加载
+    if (timeSinceLastLoad > this.data.cacheExpireTime) {
+      this.loadCurrentTabData();
+    }
+    // 否则使用缓存数据，不重新请求
   },
 
   /**
@@ -389,15 +469,15 @@ Page({
     const activeTab = this.data.activeTab;
     
     if (activeTab === "diary") {
-      this.loadDreamDiary().then(() => {
+      this.loadDreamDiary(false, true).then(() => {
         wx.stopPullDownRefresh();
       });
     } else if (activeTab === "collection") {
-      this.loadCollection().then(() => {
+      this.loadCollection(false, true).then(() => {
         wx.stopPullDownRefresh();
       });
     } else if (activeTab === "likes") {
-      this.loadLikes().then(() => {
+      this.loadLikes(false, true).then(() => {
         wx.stopPullDownRefresh();
       });
     } else {
@@ -432,8 +512,20 @@ Page({
   /**
    * 加载梦境日记
    * @param {boolean} loadMore - 是否为加载更多（追加数据）
+   * @param {boolean} forceRefresh - 是否强制刷新（忽略缓存）
    */
-  async loadDreamDiary(loadMore = false) {
+  async loadDreamDiary(loadMore = false, forceRefresh = false) {
+    // 如果不是加载更多且不是强制刷新，检查缓存
+    if (!loadMore && !forceRefresh) {
+      const lastLoadTime = this.data.lastLoadTimes.diary || 0;
+      const now = Date.now();
+      const timeSinceLastLoad = now - lastLoadTime;
+
+      // 如果缓存未过期，直接返回，不重新请求
+      if (timeSinceLastLoad <= this.data.cacheExpireTime && this.data.dreamDiaryList.length > 0) {
+        return;
+      }
+    }
     // 如果正在加载，直接返回
     if (this.data.diaryLoading) {
       return;
@@ -512,18 +604,32 @@ Page({
           diaryHasMore: hasMoreData,
           diaryLoading: false,
         });
+
+        // 更新加载时间戳（仅在非加载更多时更新）
+        if (!loadMore) {
+          this.setData({
+            "lastLoadTimes.diary": Date.now(),
+          });
+        }
       } else {
         this.setData({
           dreamDiaryList: loadMore ? this.data.dreamDiaryList : [],
           diaryHasMore: false,
           diaryLoading: false,
         });
+
+        // 更新加载时间戳（仅在非加载更多时更新）
+        if (!loadMore) {
+          this.setData({
+            "lastLoadTimes.diary": Date.now(),
+          });
+        }
       }
     } catch (error) {
       this.setData({ diaryLoading: false });
 
-      // 检查是否是401未授权错误，如果是则不显示toast，让全局401处理机制处理
-      if (error.message === "未授权") {
+      // 检查是否是401/400未授权错误，如果是则不显示toast，让全局401处理机制处理
+      if (error.message && (error.message.includes("未授权") || error.message.includes("Unauthorized"))) {
         return;
       }
 
@@ -552,8 +658,20 @@ Page({
   /**
    * 加载收藏列表
    * @param {boolean} loadMore - 是否为加载更多（追加数据）
+   * @param {boolean} forceRefresh - 是否强制刷新（忽略缓存）
    */
-  async loadCollection(loadMore = false) {
+  async loadCollection(loadMore = false, forceRefresh = false) {
+    // 如果不是加载更多且不是强制刷新，检查缓存
+    if (!loadMore && !forceRefresh) {
+      const lastLoadTime = this.data.lastLoadTimes.collection || 0;
+      const now = Date.now();
+      const timeSinceLastLoad = now - lastLoadTime;
+
+      // 如果缓存未过期，直接返回，不重新请求
+      if (timeSinceLastLoad <= this.data.cacheExpireTime && this.data.collectionList.length > 0) {
+        return;
+      }
+    }
     // 如果正在加载，直接返回
     if (this.data.collectionLoading) {
       return;
@@ -644,18 +762,32 @@ Page({
           collectionHasMore: hasMoreData,
           collectionLoading: false,
         });
+
+        // 更新加载时间戳（仅在非加载更多时更新）
+        if (!loadMore) {
+          this.setData({
+            "lastLoadTimes.collection": Date.now(),
+          });
+        }
       } else {
         this.setData({
           collectionList: loadMore ? this.data.collectionList : [],
           collectionHasMore: false,
           collectionLoading: false,
         });
+
+        // 更新加载时间戳（仅在非加载更多时更新）
+        if (!loadMore) {
+          this.setData({
+            "lastLoadTimes.collection": Date.now(),
+          });
+        }
       }
     } catch (error) {
       this.setData({ collectionLoading: false });
 
-      // 检查是否是401未授权错误，如果是则不显示toast，让全局401处理机制处理
-      if (error.message === "未授权") {
+      // 检查是否是401/400未授权错误，如果是则不显示toast，让全局401处理机制处理
+      if (error.message && (error.message.includes("未授权") || error.message.includes("Unauthorized"))) {
         return;
       }
 
@@ -684,8 +816,20 @@ Page({
   /**
    * 加载点赞列表
    * @param {boolean} loadMore - 是否为加载更多（追加数据）
+   * @param {boolean} forceRefresh - 是否强制刷新（忽略缓存）
    */
-  async loadLikes(loadMore = false) {
+  async loadLikes(loadMore = false, forceRefresh = false) {
+    // 如果不是加载更多且不是强制刷新，检查缓存
+    if (!loadMore && !forceRefresh) {
+      const lastLoadTime = this.data.lastLoadTimes.likes || 0;
+      const now = Date.now();
+      const timeSinceLastLoad = now - lastLoadTime;
+
+      // 如果缓存未过期，直接返回，不重新请求
+      if (timeSinceLastLoad <= this.data.cacheExpireTime && this.data.likesList.length > 0) {
+        return;
+      }
+    }
     // 如果正在加载，直接返回
     if (this.data.likesLoading) {
       return;
@@ -776,18 +920,32 @@ Page({
           likesHasMore: hasMoreData,
           likesLoading: false,
         });
+
+        // 更新加载时间戳（仅在非加载更多时更新）
+        if (!loadMore) {
+          this.setData({
+            "lastLoadTimes.likes": Date.now(),
+          });
+        }
       } else {
         this.setData({
           likesList: loadMore ? this.data.likesList : [],
           likesHasMore: false,
           likesLoading: false,
         });
+
+        // 更新加载时间戳（仅在非加载更多时更新）
+        if (!loadMore) {
+          this.setData({
+            "lastLoadTimes.likes": Date.now(),
+          });
+        }
       }
     } catch (error) {
       this.setData({ likesLoading: false });
 
-      // 检查是否是401未授权错误，如果是则不显示toast，让全局401处理机制处理
-      if (error.message === "未授权") {
+      // 检查是否是401/400未授权错误，如果是则不显示toast，让全局401处理机制处理
+      if (error.message && (error.message.includes("未授权") || error.message.includes("Unauthorized"))) {
         return;
       }
 

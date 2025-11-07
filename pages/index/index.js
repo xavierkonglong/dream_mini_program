@@ -18,12 +18,35 @@ Page({
     generationType: "image", // 'image' 或 'video'
     language: "zh", // 'zh' 中文, 'en' 英文
     i18n: {}, // 国际化文本，由initI18n()方法填充
+    // 会员和积分相关
+    // ============================================
+    // 【重要】会员状态切换方法：
+    // 1. 在微信开发者工具的控制台中执行：
+    //    wx.setStorageSync('user.isMember', true)  // 设置为会员
+    //    wx.setStorageSync('user.isMember', false) // 设置为非会员
+    // 2. 或者在代码中调用：
+    //    const storage = require('../../utils/storage.js');
+    //    storage.set('user.isMember', true);
+    // 3. 后续会员制度完善后，可以从接口获取会员状态
+    // ============================================
+    isMember: false, // 是否为会员
+    totalPoints: 0, // 总积分
+    pointsCost: {
+      image: 20, // 文生图消耗20积分
+      video: 50, // 文生视频消耗50积分
+    },
+    isNewVersion: true, // 是否为新版本，用于控制文生视频按钮显示
+    isLoggedIn: false, // 登录状态
   },
 
   onLoad() {
-    console.log("首页加载");
     this.initI18n();
+    this.checkLoginStatus();
     this.checkGlobalAnalysisState();
+    this.loadUserPoints();
+    this.loadMemberStatus();
+    // 首页初始化接口调用
+    this.loadHomePageData();
   },
 
   // 初始化国际化
@@ -45,6 +68,11 @@ Page({
           tipsTitle: t("index.tipsTitle"),
           tips: t("index.tips"),
           disclaimer: t("index.disclaimer"),
+          checkinToGetPoints: t("index.checkinToGetPoints"),
+          currentPoints: t("index.currentPoints"),
+          points: t("index.points"),
+          forbiddenContent: t("index.forbiddenContent"),
+          insufficientPoints: t("index.insufficientPoints"),
         },
         app: {
           shareTitle: t("app.shareTitle"),
@@ -70,9 +98,13 @@ Page({
   },
 
   onShow() {
+    this.checkLoginStatus();
     this.checkGlobalAnalysisState();
     // 通知tabBar更新状态
     wx.eventBus && wx.eventBus.emit("pageShow");
+    // 刷新积分和会员状态
+    this.loadUserPoints();
+    this.loadMemberStatus();
   },
 
   // 检查全局解析状态
@@ -208,7 +240,47 @@ Page({
         });
       }
 
-      console.log("解析响应:", response);
+      // 检查是否是敏感词检测错误
+      if (response.message === "FORBIDDEN_CONTENT") {
+        // 停止进度条动画
+        this.stopProgressAnimation();
+        // 清除全局状态
+        const app = getApp();
+        app.clearDreamAnalysisState();
+        // 显示敏感词提示
+        wx.showToast({
+          title: this.data.i18n.index.forbiddenContent,
+          icon: "none",
+          duration: 3000,
+        });
+        // 停止解析状态，但保留输入内容让用户修改
+        this.setData({
+          analyzing: false,
+        });
+        return;
+      }
+
+      // 检查是否是积分不足错误
+      if (response.message === "INSUFFICIENT_POINTS") {
+        // 停止进度条动画
+        this.stopProgressAnimation();
+        // 清除全局状态
+        const app = getApp();
+        app.clearDreamAnalysisState();
+        // 显示积分不足提示
+        wx.showToast({
+          title: this.data.i18n.index.insufficientPoints,
+          icon: "none",
+          duration: 3000,
+        });
+        // 停止解析状态，但保留输入内容
+        this.setData({
+          analyzing: false,
+        });
+        // 刷新积分显示
+        this.loadUserPoints();
+        return;
+      }
 
       // 兼容新老结构：优先取旧结构的 data，否则取扁平对象
       const raw = response && response.code === 0 && response.data ? response.data : response;
@@ -262,7 +334,6 @@ Page({
         throw new Error(response?.message || "解析失败");
       }
     } catch (error) {
-      console.error("解析失败:", error);
       // 停止进度条动画
       this.stopProgressAnimation();
       // 清除全局状态
@@ -365,18 +436,25 @@ Page({
     }
   },
 
+  // 检查登录状态
+  checkLoginStatus() {
+    const isLoggedIn = authService.checkLoginStatus();
+    this.setData({
+      isLoggedIn: isLoggedIn,
+    });
+  },
+
   // 登录成功回调
   onLoginSuccess(e) {
-    console.log("登录成功", e.detail);
+    // 更新登录状态
+    this.checkLoginStatus();
 
     // 检查是否是首次登录
     if (e.detail.isFirstLogin === true) {
-      console.log("首次登录，显示个人信息设置弹窗");
       this.setData({
         showProfileSetupModal: true,
       });
     } else {
-      console.log("非首次登录，直接开始解析梦境");
       // 恢复草稿（若输入为空）
       const draftDesc = storage.get('draft.dreamDescription');
       const draftPublic = storage.get('draft.isPublic');
@@ -395,7 +473,6 @@ Page({
 
   // 个人信息设置完成回调
   onProfileSetupComplete(e) {
-    console.log("个人信息设置完成", e.detail);
     // 恢复草稿（若输入为空）
     const draftDesc = storage.get('draft.dreamDescription');
     const draftPublic = storage.get('draft.isPublic');
@@ -418,9 +495,32 @@ Page({
     });
   },
 
+  // 跳过个人信息设置
+  onProfileSetupSkip() {
+    this.setData({
+      showProfileSetupModal: false,
+    });
+    // 恢复草稿（若输入为空）
+    const draftDesc = storage.get('draft.dreamDescription');
+    const draftPublic = storage.get('draft.isPublic');
+    const draftGenType = storage.get('draft.generationType');
+    if (!this.data.dreamDescription && draftDesc) {
+      this.setData({
+        dreamDescription: draftDesc,
+        isPublic: typeof draftPublic === 'number' ? draftPublic : this.data.isPublic,
+        generationType: draftGenType || this.data.generationType,
+      });
+    }
+    // 允许用户继续使用，但提示可以稍后完善
+    wx.showToast({
+      title: '可以稍后在个人中心完善信息',
+      icon: 'none',
+      duration: 2000
+    });
+  },
+
   // 登录取消回调
   onLoginCancel() {
-    console.log("用户取消登录");
     this.setData({
       showLoginModal: false,
     });
@@ -436,7 +536,20 @@ Page({
   /**
    * 用户点击右上角分享
    */
-  onShareAppMessage() {
+  async onShareAppMessage() {
+    // 如果用户已登录，调用分享接口记录积分（微信转发，每天仅首次分享有效）
+    const authService = require("../../services/auth.js");
+    if (authService.checkLoginStatus()) {
+      try {
+        const http = require("../../services/http.js");
+        await http.post("/dream/share", {}, {
+          showLoading: false // 分享时不显示loading，避免影响用户体验
+        });
+      } catch (error) {
+        // 分享接口调用失败不影响分享功能，静默处理
+      }
+    }
+    
     return {
       title: t("app.shareTitle"),
       path: "/pages/index/index",
@@ -447,7 +560,20 @@ Page({
   /**
    * 用户点击右上角分享到朋友圈
    */
-  onShareTimeline() {
+  async onShareTimeline() {
+    // 如果用户已登录，调用分享接口记录积分（微信转发，每天仅首次分享有效）
+    const authService = require("../../services/auth.js");
+    if (authService.checkLoginStatus()) {
+      try {
+        const http = require("../../services/http.js");
+        await http.post("/dream/share", {}, {
+          showLoading: false // 分享时不显示loading，避免影响用户体验
+        });
+      } catch (error) {
+        // 分享接口调用失败不影响分享功能，静默处理
+      }
+    }
+    
     return {
       title: t("app.timelineTitle"),
       imageUrl: "", // 可以设置分享图片
@@ -476,7 +602,6 @@ Page({
     if (wx.eventBus) {
       wx.eventBus.emit("languageChanged", newLanguage);
     } else {
-      console.warn("事件总线不存在，无法发送语言变化事件");
       this.triggerLoginModalUpdate();
     }
   },
@@ -498,5 +623,76 @@ Page({
     wx.navigateTo({
       url: '/pages/checkin/checkin'
     });
+  },
+
+  /**
+   * 加载用户积分
+   */
+  async loadUserPoints() {
+    // 如果未登录，不加载积分
+    if (!authService.isUserLoggedIn()) {
+      this.setData({
+        totalPoints: 0,
+      });
+      return;
+    }
+
+    try {
+      const http = require("../../services/http.js");
+      const res = await http.get('/points/signin', {}, {
+        showLoading: false, // 不显示loading，避免影响用户体验
+      });
+
+      if (res.code === 0 && res.data) {
+        this.setData({
+          totalPoints: res.data.total_points || 0,
+        });
+      }
+    } catch (error) {
+      // 失败时不显示错误提示，静默处理
+    }
+  },
+
+  /**
+   * 加载会员状态
+   * 暂时从storage读取，后续可以改为从接口获取
+   * 切换会员状态的方法：在控制台或代码中执行 storage.set('user.isMember', true) 或 storage.set('user.isMember', false)
+   */
+  loadMemberStatus() {
+    // 暂时从storage读取会员状态，后续可以改为从接口获取
+    const isMember = storage.get('user.isMember') || false;
+    this.setData({
+      isMember: isMember,
+    });
+  },
+
+  /**
+   * 首页初始化数据加载
+   * 可以在这里添加首页需要的接口调用
+   */
+  async loadHomePageData() {
+    try {
+      const http = require("../../services/http.js");
+      // 检查是否为新版本（无论登录与否都请求）
+      const versionRes = await http.get('/config/is_new_version', {}, {
+        showLoading: false, // 不显示loading，避免影响用户体验
+      });
+      
+      if (versionRes.code === 0 && versionRes.data) {
+        const isNewVersion = versionRes.data.is_new_version || false;
+        
+        // 保存版本检查结果，用于控制文生视频按钮显示
+        this.setData({
+          isNewVersion: isNewVersion,
+        });
+        
+      }
+      
+    } catch (error) {
+      this.setData({
+        isNewVersion: false,
+      });
+      
+    }
   },
 });

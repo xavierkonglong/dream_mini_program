@@ -1198,6 +1198,18 @@ Page({
     });
   },
 
+  /**
+   * 跳过个人信息设置
+   */
+  onProfileSetupSkip() {
+    console.log('用户跳过个人信息设置');
+    this.setData({
+      showProfileSetupModal: false,
+    });
+    // 更新登录状态
+    this.checkLoginStatus();
+  },
+
   // 返回首页
   onBackHome() {
     try {
@@ -2270,21 +2282,51 @@ Page({
   /**
    * 用户点击右上角分享
    */
-  onShareAppMessage() {
+  async onShareAppMessage() {
+    const { result } = this.data;
+    
+    // 如果用户已登录，调用分享接口记录积分（微信转发，每天仅首次分享有效）
+    if (this.data.isLoggedIn) {
+      try {
+        const http = require("../../services/http.js");
+        await http.post("/dream/share", {}, {
+          showLoading: false // 分享时不显示loading，避免影响用户体验
+        });
+      } catch (error) {
+        // 分享接口调用失败不影响分享功能，只记录错误
+        console.error("分享积分记录失败:", error);
+      }
+    }
+    
     return {
       title: t("app.shareTitle"),
       path: "/pages/index/index",
-      imageUrl: "", // 可以设置分享图片
+      imageUrl: result?.imageUrl || "", // 使用解析结果的图片作为分享图
     };
   },
 
   /**
    * 用户点击右上角分享到朋友圈
    */
-  onShareTimeline() {
+  async onShareTimeline() {
+    const { result } = this.data;
+    
+    // 如果用户已登录，调用分享接口记录积分（微信转发，每天仅首次分享有效）
+    if (this.data.isLoggedIn) {
+      try {
+        const http = require("../../services/http.js");
+        await http.post("/dream/share", {}, {
+          showLoading: false // 分享时不显示loading，避免影响用户体验
+        });
+      } catch (error) {
+        // 分享接口调用失败不影响分享功能，只记录错误
+        console.error("分享积分记录失败:", error);
+      }
+    }
+    
     return {
       title: t("app.timelineTitle"),
-      imageUrl: "", // 可以设置分享图片
+      imageUrl: result?.imageUrl || "", // 使用解析结果的图片作为分享图
     };
   },
 
@@ -2296,29 +2338,105 @@ Page({
 
     try {
       // 如果图片存在，确保转换为本地路径（Painter 组件需要本地路径）
+      // 注意：在 iPhone 上，wxfile:// 格式的路径可能不被 Painter 识别，需要重新转换
       let localImageUrl = null;
       if (result && result.imageUrl) {
         // 检查是否是远程 URL
         const isRemoteUrl = typeof result.imageUrl === 'string' && (result.imageUrl.startsWith('http://') || result.imageUrl.startsWith('https://'));
+        // 检查是否是 wxfile:// 格式（需要重新转换）
+        const isWxfilePath = typeof result.imageUrl === 'string' && result.imageUrl.startsWith('wxfile://');
+        
         if (isRemoteUrl) {
+          // 远程 URL，需要转换为本地路径
           try {
             localImageUrl = await this.ensureLocalImage(result.imageUrl);
-            // 如果转换成功，更新 result 中的 imageUrl
             if (localImageUrl) {
               result.imageUrl = localImageUrl;
-              // 同步更新到 data
               this.setData({ "result.imageUrl": localImageUrl });
             } else {
               console.warn("图片路径转换失败，使用原始 URL");
-              localImageUrl = result.imageUrl; // 转换失败时使用原始 URL
+              localImageUrl = result.imageUrl;
             }
           } catch (error) {
             console.error("图片路径转换异常:", error);
-            localImageUrl = result.imageUrl; // 异常时使用原始 URL
+            localImageUrl = result.imageUrl;
+          }
+        } else if (isWxfilePath) {
+          // wxfile:// 格式路径，在 iPhone 上可能不被识别，需要转换为临时文件路径
+          try {
+            // 先尝试读取文件，然后重新保存为临时文件
+            const fs = wx.getFileSystemManager();
+            const tempPath = `${wx.env.USER_DATA_PATH}/poster_img_${Date.now()}.png`;
+            
+            // 读取原文件
+            const fileData = await new Promise((resolve, reject) => {
+              fs.readFile({
+                filePath: result.imageUrl,
+                success: resolve,
+                fail: reject
+              });
+            });
+            
+            // 写入临时文件
+            await new Promise((resolve, reject) => {
+              fs.writeFile({
+                filePath: tempPath,
+                data: fileData.data,
+                encoding: "binary",
+                success: resolve,
+                fail: reject
+              });
+            });
+            
+            localImageUrl = tempPath;
+            console.log("wxfile:// 路径已转换为临时文件路径:", tempPath);
+          } catch (error) {
+            console.error("wxfile:// 路径转换失败，尝试使用 getImageInfo:", error);
+            // 如果转换失败，尝试使用 getImageInfo 获取可用的路径
+            try {
+              const imageInfo = await new Promise((resolve, reject) => {
+                wx.getImageInfo({
+                  src: result.imageUrl,
+                  success: resolve,
+                  fail: reject
+                });
+              });
+              localImageUrl = imageInfo.path || imageInfo.src || result.imageUrl;
+            } catch (imgError) {
+              console.error("getImageInfo 也失败:", imgError);
+              localImageUrl = result.imageUrl; // 最后使用原路径
+            }
           }
         } else {
-          // 已经是本地路径
-          localImageUrl = result.imageUrl;
+          // 其他本地路径（如临时文件路径），直接使用
+          // 但为了保险起见，也验证一下路径是否有效
+          try {
+            const fs = wx.getFileSystemManager();
+            await new Promise((resolve, reject) => {
+              fs.access({
+                path: result.imageUrl,
+                success: resolve,
+                fail: reject
+              });
+            });
+            localImageUrl = result.imageUrl;
+          } catch (error) {
+            console.warn("本地路径验证失败，尝试重新获取:", error);
+            // 如果路径无效，尝试使用 getImageInfo
+            try {
+              const imageInfo = await new Promise((resolve, reject) => {
+                wx.getImageInfo({
+                  src: result.imageUrl,
+                  success: resolve,
+                  fail: reject
+                });
+              });
+              localImageUrl = imageInfo.path || imageInfo.src || result.imageUrl;
+            } catch (imgError) {
+              console.error("getImageInfo 失败:", imgError);
+              localImageUrl = result.imageUrl;
+            }
+          }
         }
       } else {
         console.warn("海报生成时没有找到图片 URL，result:", result, "result.imageUrl:", result?.imageUrl);

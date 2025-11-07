@@ -32,7 +32,6 @@ Page({
    * 生命周期函数--监听页面加载
    */
   onLoad(options) {
-    console.log("社区页面加载");
     this.initI18n();
     // 设置状态栏高度
     const { statusBarHeight } = wx.getSystemInfoSync();
@@ -44,7 +43,6 @@ Page({
 
     // 监听语言变化事件
     this.onLanguageChanged = (newLanguage) => {
-      console.log("社区页面收到语言变化事件:", newLanguage);
       this.initI18n();
     };
     wx.eventBus && wx.eventBus.on("languageChanged", this.onLanguageChanged);
@@ -64,17 +62,10 @@ Page({
   onShow() {
     // 检查语言是否变化并重新初始化
     const currentLang = getLang();
-    console.log(
-      "社区页面 onShow - 当前语言:",
-      currentLang,
-      "页面语言:",
-      this.data.language
-    );
 
     // 强制检查并更新标题，不依赖语言变化检测
     this.initI18n();
     const newTitle = t("pageTitle.community");
-    console.log("设置新标题:", newTitle);
     wx.setNavigationBarTitle({
       title: newTitle,
     });
@@ -86,7 +77,6 @@ Page({
     // 检查是否需要刷新数据（从帖子详情页返回时）
     const app = getApp();
     if (app.globalData && app.globalData.needRefreshCommunity) {
-      console.log("检测到需要刷新社区数据");
 
       // 如果有最近更新的帖子信息，优先进行局部更新
       if (app.globalData.lastUpdatedPost) {
@@ -143,6 +133,12 @@ Page({
           sortLatest: t("community.sortLatest"),
           sortMostLiked: t("community.sortMostLiked"),
           sortMostFavorited: t("community.sortMostFavorited"),
+          // 交互反馈
+          likeSuccess: t("community.likeSuccess"),
+          unlikeSuccess: t("community.unlikeSuccess"),
+          favoriteSuccess: t("community.favoriteSuccess"),
+          unfavoriteSuccess: t("community.unfavoriteSuccess"),
+          operationFailed: t("community.operationFailed"),
         },
         app: {
           shareTitle: t("app.shareTitle"),
@@ -192,34 +188,17 @@ Page({
    * 加载梦境帖子列表
    */
   async loadDreamPosts() {
-    console.log("loadDreamPosts 被调用");
-    console.log("当前状态:", {
-      loading: this.data.loading,
-      hasMore: this.data.hasMore,
-      pageNum: this.data.pageNum,
-    });
-
     if (this.data.loading || !this.data.hasMore) {
-      console.log("跳过加载:", {
-        loading: this.data.loading,
-        hasMore: this.data.hasMore,
-      });
       return;
     }
 
     this.setData({ loading: true });
 
     try {
-      // console.log('=== 开始请求API ===');
-      // console.log('请求路径: /dream/posts/public');
-      // console.log('请求参数:', {
-      //   pageNum: this.data.pageNum,
-      //   pageSize: this.data.pageSize
-      // });
 
       // 根据 activeSort 组装接口需要的参数
       const dimension = this.data.activeSort; // time | like | favorite
-      const order = dimension === "favorite" ? "asc" : "desc";
+      const order = "desc"; // 所有排序都使用降序（最新的/最多的在前）
 
       const response = await http.get("/dream/posts/public", {
         pageNum: this.data.pageNum,
@@ -228,12 +207,9 @@ Page({
         order,
       });
 
-      // console.log('=== API响应 ===');
-      // console.log('响应数据:', response);
 
       if (response && response.data && response.data.records) {
         const records = response.data.records;
-        // console.log('收到公开帖子记录数:', records.length);
 
         // 处理数据，按时间降序排列
         const dreamPosts = records.map((item, index) => {
@@ -338,7 +314,7 @@ Page({
       events: {
         // 可以传递一些数据给详情页
         acceptDataFromOpenerPage: function (data) {
-          console.log("详情页接收数据:", data);
+          console.log("详情页接收数据:");
         },
       },
       success: (res) => {
@@ -441,13 +417,6 @@ Page({
    * 上拉加载更多
    */
   onReachBottom() {
-    console.log("触发上拉加载更多");
-    console.log("当前状态:", {
-      loading: this.data.loading,
-      hasMore: this.data.hasMore,
-      pageNum: this.data.pageNum,
-      postsCount: this.data.dreamPosts.length,
-    });
     this.loadDreamPosts();
   },
 
@@ -457,10 +426,8 @@ Page({
   checkLoginStatus() {
     try {
       const isLoggedIn = authService.checkLoginStatus();
-      console.log("登录状态检查:", isLoggedIn);
       return isLoggedIn;
     } catch (error) {
-      console.error("检查登录状态失败:", error);
       return false;
     }
   },
@@ -549,12 +516,14 @@ Page({
 
         Toast({
           type: "success",
-          message: response.data.isLiked ? "点赞成功" : "已取消点赞",
+          message: response.data.isLiked
+            ? this.data.i18n.community.likeSuccess
+            : this.data.i18n.community.unlikeSuccess,
           duration: 1500,
         });
       } else {
         wx.showToast({
-          title: response?.message || "操作失败",
+          title: response?.message || this.data.i18n.community.operationFailed,
           icon: "error",
         });
       }
@@ -610,12 +579,14 @@ Page({
 
         Toast({
           type: "success",
-          message: response.data.isFavorited ? "收藏成功" : "已取消收藏",
+          message: response.data.isFavorited
+            ? this.data.i18n.community.favoriteSuccess
+            : this.data.i18n.community.unfavoriteSuccess,
           duration: 1500,
         });
       } else {
         wx.showToast({
-          title: response?.message || "操作失败",
+          title: response?.message || this.data.i18n.community.operationFailed,
           icon: "error",
         });
       }
@@ -633,7 +604,18 @@ Page({
   /**
    * 用户点击右上角分享
    */
-  onShareAppMessage() {
+  async onShareAppMessage() {
+    
+    // 调用分享接口记录积分（微信转发，每天仅首次分享有效）
+    // 后端会通过 token 判断用户，未登录会返回 401
+    try {
+      await http.post("/dream/share", {}, {
+        showLoading: false // 分享时不显示loading，避免影响用户体验
+      });
+    } catch (error) {
+      // 分享接口调用失败不影响分享功能，只记录错误
+    }
+    
     return {
       title: t("app.shareTitle"),
       path: "/pages/index/index",
@@ -644,7 +626,22 @@ Page({
   /**
    * 用户点击右上角分享到朋友圈
    */
-  onShareTimeline() {
+  async onShareTimeline() {
+    console.log("社区页面 - onShareTimeline 被调用");
+    
+    // 调用分享接口记录积分（微信转发，每天仅首次分享有效）
+    // 后端会通过 token 判断用户，未登录会返回 401
+    try {
+      console.log("社区页面 - 开始调用分享接口");
+      await http.post("/dream/share", {}, {
+        showLoading: false // 分享时不显示loading，避免影响用户体验
+      });
+      console.log("社区页面 - 分享接口调用成功");
+    } catch (error) {
+      // 分享接口调用失败不影响分享功能，只记录错误
+      console.error("社区页面 - 分享积分记录失败:", error);
+    }
+    
     return {
       title: t("app.timelineTitle"),
       imageUrl: "", // 可以设置分享图片

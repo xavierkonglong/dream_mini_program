@@ -40,8 +40,8 @@ page {
 }
 
 .checkin-circle {
-  width: 320rpx;
-  height: 320rpx;
+  width: 280rpx;
+  height: 280rpx;
   position: relative;
   margin-bottom: 40rpx;
 }
@@ -70,7 +70,7 @@ page {
 .checkin-label {
   font-size: 24rpx;
   color: #844AF1;
-  margin-bottom: 20rpx;
+  margin-bottom: 8rpx;
 }
 
 .checkin-days {
@@ -201,6 +201,7 @@ page {
   display: flex;
   flex-direction: column;
   gap: 24rpx;
+  padding-bottom:20rpx;
 }
 
 .task-card {
@@ -232,6 +233,18 @@ page {
 
 .task-icon.zhongan {
   background: linear-gradient(135deg, #ede9fe 0%, #e0e7ff 100%);
+}
+
+.task-icon.publish {
+  background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+}
+
+.task-icon.share {
+  background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
+}
+
+.task-icon.like {
+  background: linear-gradient(135deg, #fce7f3 0%, #fbcfe8 100%);
 }
 
 .task-icon-emoji {

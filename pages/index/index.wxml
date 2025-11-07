@@ -2,19 +2,28 @@
 <view class="container language-{{language}}">
   <!-- 背景图片 -->
   <image class="background-image" src="{{imageUrls.BACKGROUNDS.INDEX}}" mode="aspectFill"></image>
-  
+
   <!-- 右上角功能区 -->
   <view class="top-actions">
-    <!-- 签到入口 -->
-    <!-- <view class="checkin-entry" bindtap="goToCheckin">
-      <text class="checkin-icon">🎁</text>
-    </view> -->
     <!-- 语言切换按钮 -->
     <view class="language-toggle" bindtap="onLanguageToggle">
       <text class="language-text">{{language === 'zh' ? 'EN' : '中文'}}</text>
     </view>
   </view>
-  
+  <!-- 左上角功能区 -->
+  <view class="top-actions-left" wx:if="{{isLoggedIn}}">
+    <!-- 会员标识 -->
+    <!-- <view class="member-badge {{isMember ? 'member' : 'non-member'}}">
+      <van-icon name="{{isMember ? 'vip-card-o' : 'user-o'}}" size="32rpx" color="{{isMember ? '#ffd700' : '#999'}}" />
+      <text class="member-text">{{isMember ? '会员' : '普通'}}</text>
+    </view> -->
+    <!-- 积分显示 -->
+    <view class="points-display" bindtap="goToCheckin">
+      <van-icon name="medal-o" size="48rpx" color="#ffae00" />
+      <text class="points-text">{{i18n.index.checkinToGetPoints}}</text>
+    </view>
+  </view>
+
   <!-- 主内容区域 -->
   <view class="main-content">
     <!-- 提示区域 -->
@@ -22,20 +31,11 @@
       <view class="hint-title">{{i18n.index.title}}</view>
       <view class="hint-subtitle">{{i18n.index.subtitle}}</view>
     </view>
-    
+
     <!-- 输入区域 -->
     <view class="input-section">
       <view class="input-field glass-effect {{inputFocused ? 'focused' : ''}}">
-        <textarea 
-          class="dream-input"
-          placeholder="{{i18n.index.placeholder}}"
-          value="{{dreamDescription}}"
-          bindinput="onDreamInput"
-          bindfocus="onInputFocus"
-          bindblur="onInputBlur"
-          maxlength="1000"
-          show-confirm-bar="{{false}}"
-        ></textarea>
+        <textarea class="dream-input" placeholder="{{i18n.index.placeholder}}" value="{{dreamDescription}}" bindinput="onDreamInput" bindfocus="onInputFocus" bindblur="onInputBlur" maxlength="1000" show-confirm-bar="{{false}}"></textarea>
         <view class="input-actions" wx:if="{{dreamDescription}}">
           <view class="char-count">{{dreamDescription.length}}/1000</view>
           <view class="clear-btn" bindtap="onClearInput">
@@ -43,35 +43,41 @@
           </view>
         </view>
       </view>
+
+      <view class="points-display-input-section" bindtap="goToCheckin">
+        <text class="points-text-input-section">{{i18n.index.currentPoints}} {{totalPoints}}</text>
+      </view>
     </view>
-    
+
     <!-- 生成类型选择 -->
     <view class="generation-type-section">
       <view class="generation-type-title">{{i18n.index.generationType}}</view>
       <radio-group class="generation-type-group" bindchange="onGenerationTypeChange">
         <label class="generation-type-item {{generationType === 'image' ? 'active' : ''}}">
-          <radio value="image" checked="{{generationType === 'image'}}" color="#8B5CF6"/>
+          <radio value="image" checked="{{generationType === 'image'}}" color="#8B5CF6" />
           <text>{{i18n.index.textToImage}}</text>
+          <view class="points-cost">
+            <text class="points-cost-text">{{pointsCost.image}}{{i18n.index.points}}</text>
+          </view>
         </label>
-        <label class="generation-type-item {{generationType === 'video' ? 'active' : ''}}">
-          <radio value="video" checked="{{generationType === 'video'}}" color="#8B5CF6"/>
+        <label class="generation-type-item {{generationType === 'video' ? 'active' : ''}}" wx:if="{{!isNewVersion}}">
+          <radio value="video" checked="{{generationType === 'video'}}" color="#8B5CF6" />
           <text>{{i18n.index.textToVideo}}</text>
+          <view class="points-cost">
+            <text class="points-cost-text">{{pointsCost.video}}{{i18n.index.points}}</text>
+          </view>
         </label>
       </radio-group>
     </view>
-    
+
     <!-- 分析按钮 -->
     <view class="action-section">
-      <button 
-        class="analysis-button {{analyzing ? 'analyzing' : ''}}"
-        bindtap="onAnalyzeDream"
-        disabled="{{analyzing}}"
-      >
+      <button class="analysis-button {{analyzing ? 'analyzing' : ''}}" bindtap="onAnalyzeDream" disabled="{{analyzing}}">
         <text wx:if="{{!analyzing}}">{{i18n.index.analyze}}</text>
         <text wx:else>{{i18n.index.analyzing}}</text>
       </button>
     </view>
-    
+
     <!-- 进度条 -->
     <view class="progress-section {{analyzing ? 'show' : ''}}">
       <view class="progress-bar">
@@ -79,7 +85,7 @@
       </view>
       <view class="progress-text" wx:if="{{analyzing}}">{{progressText}}</view>
     </view>
-    
+
     <!-- 使用提示 -->
     <view class="tips-section">
       <view class="tips-title">{{i18n.index.tipsTitle}}</view>
@@ -89,23 +95,12 @@
       <view class="tips-disclaimer">{{i18n.index.disclaimer}}</view>
     </view>
   </view>
-  
+
   <!-- 登录弹窗 -->
-  <login-modal 
-    show="{{showLoginModal}}"
-    title="{{i18n.loginModal && i18n.loginModal.title || '欢迎来到梦境世界'}}"
-    subtitle="{{i18n.loginModal && i18n.loginModal.subtitle || '请先登录以体验完整功能'}}"
-    bind:loginSuccess="onLoginSuccess"
-    bind:loginCancel="onLoginCancel"
-    bind:close="onCloseLoginModal"
-  />
-  
+  <login-modal show="{{showLoginModal}}" title="{{i18n.loginModal && i18n.loginModal.title || '欢迎来到梦境世界'}}" subtitle="{{i18n.loginModal && i18n.loginModal.subtitle || '请先登录以体验完整功能'}}" bind:loginSuccess="onLoginSuccess" bind:loginCancel="onLoginCancel" bind:close="onCloseLoginModal" />
+
   <!-- 个人信息设置弹窗 -->
-  <profile-setup-modal 
-    show="{{showProfileSetupModal}}"
-    bind:setupComplete="onProfileSetupComplete"
-    bind:close="onCloseProfileSetupModal"
-  />
+  <profile-setup-modal show="{{showProfileSetupModal}}" bind:setupComplete="onProfileSetupComplete" bind:close="onCloseProfileSetupModal" bind:skip="onProfileSetupSkip" />
 </view>
 
 <!-- 自定义tabBar -->

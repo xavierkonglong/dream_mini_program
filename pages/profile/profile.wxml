@@ -325,7 +325,7 @@
   <login-modal show="{{showLoginModal}}" title="{{i18n.profile.welcomeTitle}}" subtitle="{{i18n.profile.welcomeSubtitle}}" bind:loginSuccess="onLoginSuccess" bind:loginCancel="onLoginCancel" bind:close="onCloseLoginModal"></login-modal>
 
   <!-- 个人信息设置弹窗 -->
-  <profile-setup-modal show="{{showProfileSetupModal}}" bind:setupComplete="onProfileSetupComplete" bind:close="onCloseProfileSetupModal" />
+  <profile-setup-modal show="{{showProfileSetupModal}}" bind:setupComplete="onProfileSetupComplete" bind:close="onCloseProfileSetupModal" bind:skip="onProfileSetupSkip" />
 </view>
 
 <!-- 自定义tabBar -->

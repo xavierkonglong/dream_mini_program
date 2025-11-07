@@ -27,6 +27,11 @@ const i18n = {
       analyzingMessage: "解析中，请稍后查看梦境日记",
       shareTitle: "梦境解析小程序",
       timelineTitle: "梦境解析小程序 - 探索你的梦境世界",
+      checkinToGetPoints: "签到获取积分",
+      currentPoints: "当前积分",
+      points: "积分",
+      forbiddenContent: "你的内容检测出敏感词请重新生成",
+      insufficientPoints: "积分不足，请先签到获取积分",
     },
 
     // 社区页面
@@ -52,6 +57,11 @@ const i18n = {
       sortLatest: "最新",
       sortMostLiked: "点赞最多",
       sortMostFavorited: "收藏最多",
+      // 交互反馈
+      likeSuccess: "点赞成功",
+      unlikeSuccess: "已取消点赞",
+      favoriteSuccess: "收藏成功",
+      unfavoriteSuccess: "已取消收藏",
     },
 
     // 个人页面
@@ -177,6 +187,7 @@ const i18n = {
       postDetail: "梦境详情",
       diary: "梦境日记",
       result: "解析结果",
+      checkin: "积分任务",
     },
 
     // 登录弹窗
@@ -454,6 +465,39 @@ const i18n = {
       back: "返回",
       close: "关闭",
     },
+
+    // 签到页面
+    checkin: {
+      rulesTitle: "积分规则",
+      rulesContent: "每日签到可获得积分奖励，连续签到天数越多，奖励越丰厚！",
+      consecutiveDays: "已连续签到",
+      day: "天",
+      checkinNow: "立即签到",
+      checking: "签到中...",
+      checkedIn: "今日已签到",
+      tomorrowReward: "明日签到",
+      todayPoints: "今日积分",
+      myPoints: "我的积分",
+      tasksTitle: "做任务领积分",
+      publishTitle: "发布到社区",
+      publishDesc: "将你的梦境解析分享到社区",
+      publishPoints: "+10积分",
+      publishButton: "去发布",
+      shareTitle: "分享给好友",
+      shareDesc: "分享给好友或群聊，公开分享",
+      sharePoints: "+50积分",
+      shareButton: "去分享",
+      likeTitle: "获得点赞",
+      likeDesc: "你的帖子被点赞，每个赞+5积分",
+      likePoints: "每个赞+5积分",
+      likeButton: "去社区查看",
+      completed: "已完成 >",
+      taskCompleted: "任务已完成",
+      featureDeveloping: "功能开发中",
+      publishTip: "发布优质内容，吸引更多点赞",
+      loading: "加载中...",
+      checkingText: "签到中...",
+    },
   },
 
   // 英文配置
@@ -462,7 +506,7 @@ const i18n = {
     index: {
       title: "💭 Share Your Dream",
       subtitle:
-        "Describe your dream in detail, AI will analyze its meaning for you",
+        "Dream it, AI interprets it.",
       placeholder:
         "For example: I dreamed I was flying in the sky, overlooking a beautiful city, feeling very free and happy...",
       generationType: "Generation Type",
@@ -482,6 +526,11 @@ const i18n = {
       dreamContentRequired: "Please enter dream content",
       dreamContentTooLong: "Dream content cannot exceed 1000 characters",
       analyzingMessage: "Analyzing, please check dream diary later",
+      checkinToGetPoints: "Check in & Earn",
+      currentPoints: "Current Points",
+      points: "Points",
+      forbiddenContent: "Your content contains sensitive words, please regenerate",
+      insufficientPoints: "Insufficient points, please check in to earn points first",
     },
 
     // 社区页面
@@ -505,6 +554,11 @@ const i18n = {
       sortLatest: "Latest",
       sortMostLiked: "Most Liked",
       sortMostFavorited: "Most Favorited",
+      // 交互反馈
+      likeSuccess: "Liked",
+      unlikeSuccess: "Unliked",
+      favoriteSuccess: "Favorited",
+      unfavoriteSuccess: "Unfavorited",
     },
 
     // 个人页面
@@ -628,6 +682,7 @@ const i18n = {
       postDetail: "Dream Detail",
       diary: "Dream Diary",
       result: "Analysis Result",
+      checkin: "Points & Tasks",
     },
 
     // 登录弹窗
@@ -915,6 +970,39 @@ const i18n = {
       share: "Share",
       back: "Back",
       close: "Close",
+    },
+
+    // 签到页面
+    checkin: {
+      rulesTitle: "Points Rules",
+      rulesContent: "Daily check-in rewards points. The more consecutive days, the richer the rewards!",
+      consecutiveDays: "Consecutive Days",
+      day: "days",
+      checkinNow: "Check In Now",
+      checking: "Checking...",
+      checkedIn: "Signed in",
+      tomorrowReward: "Tomorrow Check-in",
+      todayPoints: "Today's Points",
+      myPoints: "My Points",
+      tasksTitle: "Complete Tasks for Points",
+      publishTitle: "Publish to Community",
+      publishDesc: "Share your dream analysis to the community",
+      publishPoints: "+10 points",
+      publishButton: "Publish",
+      shareTitle: "Share with Friends",
+      shareDesc: "Share with friends or group chats",
+      sharePoints: "+50 points",
+      shareButton: "Share",
+      likeTitle: "Get Likes",
+      likeDesc: "Your posts get liked, +5 points per like",
+      likePoints: "+5 points per like",
+      likeButton: "View Community",
+      completed: "Completed >",
+      taskCompleted: "Task Completed",
+      featureDeveloping: "Feature in Development",
+      publishTip: "Publish quality content to attract more likes",
+      loading: "Loading...",
+      checkingText: "Checking...",
     },
   },
 };

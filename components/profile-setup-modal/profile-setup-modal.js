@@ -50,8 +50,24 @@ Component({
      * 点击遮罩层
      */
     onMaskTap() {
-      // 不允许点击遮罩关闭，必须完成设置
-      return;
+      // 允许点击遮罩关闭，但需要确认
+      this.onClose();
+    },
+
+    /**
+     * 关闭弹窗
+     */
+    onClose() {
+      // 直接调用提交方法，等同于完成设置
+      this.doSubmit(true); // true 表示跳过验证
+    },
+
+    /**
+     * 稍后完善
+     */
+    onSkip() {
+      // 直接调用提交方法，等同于完成设置
+      this.doSubmit(true); // true 表示跳过验证
     },
 
     /**
@@ -154,15 +170,26 @@ Component({
     },
 
     /**
-     * 提交个人信息
+     * 提交个人信息（内部方法）
+     * @param {Boolean} skipValidation - 是否跳过验证
      */
-    async onSubmit() {
+    async doSubmit(skipValidation = false) {
       if (this.data.submitting) return;
 
-      const { userName, userPhone } = this.data.userInfo;
+      let { userName, userPhone } = this.data.userInfo;
       
-      // 验证昵称
-      if (!userName.trim()) {
+      // 如果跳过验证且没有昵称，生成默认昵称
+      if (skipValidation && !userName.trim()) {
+        const currentUser = authService.getCurrentUser() || {};
+        // 如果用户已有昵称，使用已有昵称；否则生成默认昵称
+        userName = currentUser.userName || `梦境用户${Math.floor(Math.random() * 10000)}`;
+        this.setData({
+          'userInfo.userName': userName
+        });
+      }
+      
+      // 验证昵称（仅在非跳过验证模式下）
+      if (!skipValidation && !userName.trim()) {
         wx.showToast({
           title: '请输入昵称',
           icon: 'none'
@@ -170,8 +197,8 @@ Component({
         return;
       }
 
-      // 验证手机号
-      if (userPhone && !/^1[3-9]\d{9}$/.test(userPhone)) {
+      // 验证手机号（仅在非跳过验证模式下）
+      if (!skipValidation && userPhone && !/^1[3-9]\d{9}$/.test(userPhone)) {
         wx.showToast({
           title: '请输入正确的手机号',
           icon: 'none'
@@ -182,11 +209,11 @@ Component({
       this.setData({ submitting: true });
 
       try {
-        logger.info('开始更新用户信息:', { userName, userPhone });
+        logger.info('开始更新用户信息:', { userName, userPhone, skipValidation });
         
         const response = await http.post('/user/update', {
           userName: userName,
-          userPhone: userPhone
+          userPhone: userPhone || '' // 手机号可以为空
         });
         
         logger.info('更新用户信息响应:', response);
@@ -197,16 +224,18 @@ Component({
           const updatedUser = {
             ...currentUser,
             userName: userName,
-            userPhone: userPhone,
-            userAvatar: this.data.userInfo.userAvatar
+            userPhone: userPhone || currentUser.userPhone || '',
+            userAvatar: this.data.userInfo.userAvatar || currentUser.userAvatar || ''
           };
           
           authService.setCurrentUser(updatedUser);
           
-          wx.showToast({
-            title: '设置完成',
-            icon: 'success'
-          });
+          if (!skipValidation) {
+            wx.showToast({
+              title: '设置完成',
+              icon: 'success'
+            });
+          }
 
           // 触发完成事件
           this.triggerEvent('setupComplete', {
@@ -223,6 +252,14 @@ Component({
         
         // 检查是否是401未授权错误
         if (error.statusCode === 401 || (error.data && error.data.code === 401)) {
+          // 如果是跳过验证模式，不显示modal，直接关闭弹窗
+          if (skipValidation) {
+            logger.warn('跳过验证模式下遇到401错误，直接关闭弹窗');
+            this.triggerEvent('close');
+            return;
+          }
+          
+          // 正常模式下显示登录过期提示
           wx.showModal({
             title: '登录过期',
             content: '您的登录已过期，请重新登录',
@@ -237,13 +274,28 @@ Component({
           return;
         }
         
-        wx.showToast({
-          title: error.message || '更新失败，请重试',
-          icon: 'error'
-        });
+        // 如果跳过验证时出错，不显示任何提示，直接关闭弹窗
+        if (skipValidation) {
+          logger.warn('跳过验证模式下更新失败，但仍然关闭弹窗');
+          this.triggerEvent('close');
+        } else {
+          // 正常模式下显示错误提示
+          wx.showToast({
+            title: error.message || '更新失败，请重试',
+            icon: 'error'
+          });
+        }
       } finally {
         this.setData({ submitting: false });
       }
+    },
+
+    /**
+     * 提交个人信息（用户主动点击完成设置按钮）
+     */
+    async onSubmit() {
+      // 正常模式，需要验证
+      this.doSubmit(false);
     }
   },
 

@@ -139,7 +139,21 @@ Page({
   /**
    * 用户点击右上角分享
    */
-  onShareAppMessage() {
+  async onShareAppMessage() {
+    // 如果用户已登录，调用分享接口记录积分（微信转发，每天仅首次分享有效）
+    const authService = require("../../services/auth.js");
+    if (authService.checkLoginStatus()) {
+      try {
+        const http = require("../../services/http.js");
+        await http.post("/dream/share", {}, {
+          showLoading: false // 分享时不显示loading，避免影响用户体验
+        });
+      } catch (error) {
+        // 分享接口调用失败不影响分享功能，只记录错误
+        console.error("分享积分记录失败:", error);
+      }
+    }
+    
     return {
       title: t("app.shareTitle"),
       path: "/pages/index/index",
@@ -149,7 +163,21 @@ Page({
   /**
    * 用户点击右上角分享到朋友圈
    */
-  onShareTimeline() {
+  async onShareTimeline() {
+    // 如果用户已登录，调用分享接口记录积分（微信转发，每天仅首次分享有效）
+    const authService = require("../../services/auth.js");
+    if (authService.checkLoginStatus()) {
+      try {
+        const http = require("../../services/http.js");
+        await http.post("/dream/share", {}, {
+          showLoading: false // 分享时不显示loading，避免影响用户体验
+        });
+      } catch (error) {
+        // 分享接口调用失败不影响分享功能，只记录错误
+        console.error("分享积分记录失败:", error);
+      }
+    }
+    
     return {
       title: t("app.timelineTitle"),
       imageUrl: "", // 可以设置分享图片

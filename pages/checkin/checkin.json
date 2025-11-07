@@ -1,5 +1,7 @@
 {
-  "usingComponents": {},
+  "usingComponents": {
+    "van-icon": "@vant/weapp/icon/index"
+  },
   "navigationBarTitleText": "积分任务",
   "navigationBarBackgroundColor": "#8B5CF6",
   "navigationBarTextStyle": "white",

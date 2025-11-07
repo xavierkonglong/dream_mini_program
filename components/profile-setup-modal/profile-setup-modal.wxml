@@ -12,6 +12,11 @@
     
     <!-- 弹窗主体 -->
     <view class="modal-body">
+      <!-- 关闭按钮 -->
+      <view class="close-btn" bindtap="onClose">
+        <text class="close-icon">✕</text>
+      </view>
+      
       <!-- 标题 -->
       <view class="modal-title">
         <text class="title-text">完善个人信息</text>
@@ -77,6 +82,15 @@
         >
           <text class="btn-text">{{submitting ? '保存中...' : '完成设置'}}</text>
         </button>
+        
+        <!-- 稍后完善按钮 -->
+        <button 
+          class="skip-btn"
+          bindtap="onSkip"
+        >
+          <text class="skip-btn-text">稍后完善</text>
+        </button>
+        
       </view>
       
       <!-- 提示信息 -->

@@ -3,7 +3,7 @@
   <!-- 积分规则提示 -->
   <view class="rules-hint" bindtap="showRules">
     <text class="question-icon">?</text>
-    <text class="rules-text">积分规则</text>
+    <text class="rules-text">{{i18n.checkin.rulesTitle}}</text>
   </view>
 
   <!-- 签到区域 -->
@@ -11,19 +11,19 @@
     <view class="checkin-circle">
       <view class="circle-bg"></view>
       <view class="circle-content">
-        <text class="checkin-label">已连续签到</text>
+        <text class="checkin-label">{{i18n.checkin.consecutiveDays}}</text>
         <view class="checkin-days">
           <text class="days-number">{{checkinDays}}</text>
-          <text class="days-unit">天</text>
+          <text class="days-unit">{{i18n.checkin.day}}</text>
         </view>
       </view>
     </view>
-    <button class="checkin-btn {{isCheckedIn ? 'checked-in' : ''}}" bindtap="handleCheckin" disabled="{{isCheckedIn}}">
-      {{isCheckedIn ? '今日已签到' : '立即签到'}}
+    <button class="checkin-btn {{isCheckedIn ? 'checked-in' : ''}}" bindtap="handleCheckin" disabled="{{isCheckedIn || isChecking}}">
+      {{isChecking ? i18n.checkin.checking : (isCheckedIn ? i18n.checkin.checkedIn : i18n.checkin.checkinNow)}}
     </button>
     <view class="tomorrow-reward">
       <text class="reward-icon">✨</text>
-      <text class="reward-text">明日签到 +{{tomorrowReward}} 积分</text>
+      <text class="reward-text">{{i18n.checkin.tomorrowReward}} +{{tomorrowReward}} {{language === 'zh' ? '积分' : ' points'}}</text>
     </view>
   </view>
 
@@ -31,28 +31,28 @@
   <view class="points-summary">
     <view class="points-item">
       <view class="points-icon today">
-        <text class="icon-text">↑</text>
+        <van-icon name="arrow-up" size="40rpx" color="#ffffff" />
       </view>
-      <text class="points-label">今日积分</text>
+      <text class="points-label">{{i18n.checkin.todayPoints}}</text>
       <text class="points-value">{{todayPoints}}</text>
     </view>
     <view class="points-item">
       <view class="points-icon total">
-        <text class="icon-text">⭐</text>
+        <van-icon name="star-o" size="40rpx" color="#ffffff" />
       </view>
-      <text class="points-label">我的积分</text>
+      <text class="points-label">{{i18n.checkin.myPoints}}</text>
       <text class="points-value">{{totalPoints}}</text>
     </view>
   </view>
 
   <!-- 任务列表 -->
   <view class="tasks-section">
-    <view class="tasks-title">做任务领积分</view>
+    <view class="tasks-title">{{i18n.checkin.tasksTitle}}</view>
     <view class="task-list">
       <view class="task-card" wx:for="{{taskList}}" wx:key="id">
         <view class="task-icon-wrapper">
           <view class="task-icon {{item.iconClass}}">
-            <text class="task-icon-emoji">{{item.iconEmoji}}</text>
+            <van-icon name="{{item.iconName}}" size="48rpx" color="#8B5CF6" />
           </view>
         </view>
         <view class="task-content">
@@ -60,8 +60,14 @@
           <view class="task-desc">{{item.desc}}</view>
           <view class="task-points">{{item.points}}</view>
         </view>
-        <button class="task-btn {{item.completed ? 'completed' : ''}}" bindtap="handleTask" data-id="{{item.id}}" disabled="{{item.completed}}">
-          {{item.completed ? '已绑定 >' : item.buttonText}}
+        <button wx:if="{{item.type === 'share' && !item.completed}}" class="task-btn" open-type="share">
+          {{item.buttonText}}
+        </button>
+        <button wx:elif="{{item.type === 'share' && item.completed}}" class="task-btn completed" disabled>
+          {{i18n.checkin.completed}}
+        </button>
+        <button wx:else class="task-btn {{item.completed ? 'completed' : ''}}" bindtap="handleTask" data-id="{{item.id}}" disabled="{{item.completed}}">
+          {{item.completed ? i18n.checkin.completed : item.buttonText}}
         </button>
       </view>
     </view>

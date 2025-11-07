@@ -66,7 +66,10 @@ function request(options) {
       header: requestHeader,
       timeout: timeout || config.timeout || 30000,
       success: (res) => {
-        wx.hideLoading();
+        // 只有在显示了loading的情况下才隐藏
+        if (showLoading) {
+          wx.hideLoading();
+        }
         // 处理响应
         if (res.statusCode >= 200 && res.statusCode < 300) {
           // 业务成功
@@ -246,7 +249,10 @@ function upload(url, filePath, name = 'file', formData = {}, options = {}) {
       header: requestHeader,
       timeout: timeout || config.timeout || 30000,
       success: (res) => {
-        wx.hideLoading();
+        // 只有在显示了loading的情况下才隐藏
+        if (showLoading) {
+          wx.hideLoading();
+        }
         
         logger.info('上传成功:', {
           statusCode: res.statusCode,
@@ -297,7 +303,10 @@ function upload(url, filePath, name = 'file', formData = {}, options = {}) {
         }
       },
       fail: (err) => {
-        wx.hideLoading();
+        // 只有在显示了loading的情况下才隐藏
+        if (showLoading) {
+          wx.hideLoading();
+        }
         
         logger.error('上传失败:', err);
         

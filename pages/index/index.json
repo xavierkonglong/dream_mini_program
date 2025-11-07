@@ -4,7 +4,8 @@
   "usingComponents": {
     "login-modal": "/components/login-modal/login-modal",
     "profile-setup-modal": "/components/profile-setup-modal/profile-setup-modal",
-    "custom-tabbar": "/components/custom-tabbar/custom-tabbar"
+    "custom-tabbar": "/components/custom-tabbar/custom-tabbar",
+    "van-icon": "@vant/weapp/icon/index"
   }
 }
 

@@ -244,5 +244,5 @@
   <canvas id="video-canvas" type="2d" style="position: fixed; top: -9999rpx; left: -9999rpx; width: 0rpx; height: 0rpx; opacity: 0;"></canvas>
 
   <!-- 个人信息设置弹窗 -->
-  <profile-setup-modal show="{{showProfileSetupModal}}" bind:setupComplete="onProfileSetupComplete" bind:close="onCloseProfileSetupModal" />
+  <profile-setup-modal show="{{showProfileSetupModal}}" bind:setupComplete="onProfileSetupComplete" bind:close="onCloseProfileSetupModal" bind:skip="onProfileSetupSkip" />
 </view>
