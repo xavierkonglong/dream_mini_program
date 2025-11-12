@@ -67,6 +67,13 @@
             <text class="points-cost-text">{{pointsCost.video}}{{i18n.index.points}}</text>
           </view>
         </label>
+        <label class="generation-type-item {{generationType === 'professional' ? 'active' : ''}}">
+          <radio value="professional" checked="{{generationType === 'professional'}}" color="#8B5CF6" />
+          <text>{{i18n.index.professionalAnalysis}}</text>
+          <view class="points-cost">
+            <text class="points-cost-text">{{pointsCost.professional}}{{i18n.index.points}}</text>
+          </view>
+        </label>
       </radio-group>
     </view>
 

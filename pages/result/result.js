@@ -68,11 +68,17 @@ Page({
           _raw: result,
         };
 
-        // 格式化解析内容，进行智能分段
+        // 格式化解析内容
         if (result.interpretation) {
-          result.interpretationParagraphs = this.formatInterpretation(
-            result.interpretation
-          );
+          // 专业版使用 markdown 格式，需要转换为 HTML
+          if (result.generationType === "professional") {
+            result.interpretationHTML = this.markdownToHTML(result.interpretation);
+          } else {
+            // 普通版使用智能分段
+            result.interpretationParagraphs = this.formatInterpretation(
+              result.interpretation
+            );
+          }
         }
 
         // 解析疏导性问题JSON
@@ -131,6 +137,7 @@ Page({
 
         // 检查是否是视频类型
         const isVideoType = result.generationType === "video";
+        const isProfessionalType = result.generationType === "professional";
         const videoTaskId = result.videoTaskId || null;
 
         if (isVideoType) {
@@ -146,27 +153,29 @@ Page({
           if (!result.videoUrl) {
             this.startVideoPolling();
           }
-        }
-
-        // 预加载AI图片，转为本地临时路径，避免跨域/域名解析问题
-        // 只有文生图模式才处理图片，文生视频不需要图片
-        if (!isVideoType && result.imageUrl) {
-          this.ensureLocalImage(result.imageUrl)
-            .then((localPath) => {
-              if (localPath) {
-                result.imageUrl = localPath;
-              }
-              this.setData({ result, loading: false });
-            })
-            .catch(() => {
-              this.setData({ result, loading: false });
-            });
-        } else if (!isVideoType && !result.imageUrl) {
-          // 文生图还未就绪，开始轮询图片
-          this.setData({ result, loading: false, imageLoading: true });
-          this.startImagePolling();
-        } else {
+        } else if (isProfessionalType) {
+          // 专业版解析：不需要图片和视频，直接显示结果
           this.setData({ result, loading: false });
+        } else {
+          // 文生图模式：预加载AI图片，转为本地临时路径，避免跨域/域名解析问题
+          if (result.imageUrl) {
+            this.ensureLocalImage(result.imageUrl)
+              .then((localPath) => {
+                if (localPath) {
+                  result.imageUrl = localPath;
+                }
+                this.setData({ result, loading: false });
+              })
+              .catch(() => {
+                this.setData({ result, loading: false });
+              });
+          } else if (result.imageStatus !== "none") {
+            // 文生图还未就绪，开始轮询图片（排除专业版，专业版 imageStatus 为 "none"）
+            this.setData({ result, loading: false, imageLoading: true });
+            this.startImagePolling();
+          } else {
+            this.setData({ result, loading: false });
+          }
         }
       } catch (error) {
         console.error("解析结果数据失败:", error);
@@ -208,6 +217,13 @@ Page({
   async pollImageStatus() {
     const { result, imagePollCount, imageLoading } = this.data;
     if (!imageLoading) return;
+
+    // 专业版不需要轮询图片
+    if (result && result.generationType === "professional") {
+      this.stopImagePolling();
+      this.setData({ imageLoading: false });
+      return;
+    }
 
     // 达到最大次数后停止
     if (imagePollCount >= 60) {
@@ -383,6 +399,42 @@ Page({
           thankYouTitle: t("result.thankYouTitle"),
           thankYouText: t("result.thankYouText"),
           noResult: t("result.noResult"),
+          // 专业版详细分析
+          professionalAnalysisTitle: t("result.professionalAnalysisTitle"),
+          dreamTypeJudgment: t("result.dreamTypeJudgment"),
+          type: t("result.type"),
+          judgmentBasis: t("result.judgmentBasis"),
+          emotionIntensity: t("result.emotionIntensity"),
+          interpretation: t("result.interpretation"),
+          coreElementAnalysis: t("result.coreElementAnalysis"),
+          condensation: t("result.condensation"),
+          displacementTarget: t("result.displacementTarget"),
+          symbolicInterpretation: t("result.symbolicInterpretation"),
+          defenseMechanism: t("result.defenseMechanism"),
+          associationScore: t("result.associationScore"),
+          explanation: t("result.explanation"),
+          dualDimensionAnalysis: t("result.dualDimensionAnalysis"),
+          subconsciousMotivation: t("result.subconsciousMotivation"),
+          need: t("result.need"),
+          conflict: t("result.conflict"),
+          idScore: t("result.idScore"),
+          symbolism: t("result.symbolism"),
+          classicMatch: t("result.classicMatch"),
+          personalAssociation: t("result.personalAssociation"),
+          realityConnection: t("result.realityConnection"),
+          eventChain: t("result.eventChain"),
+          distressAssociation: t("result.distressAssociation"),
+          associationScoreLabel: t("result.associationScoreLabel"),
+          mentalStateRanking: t("result.mentalStateRanking"),
+          selfAwarenessTips: t("result.selfAwarenessTips"),
+          awarenessMethod: t("result.awarenessMethod"),
+          actionGuidance: t("result.actionGuidance"),
+          executableScore: t("result.executableScore"),
+          coreAwarenessPoint: t("result.coreAwarenessPoint"),
+          analysisOrientedInsight: t("result.analysisOrientedInsight"),
+          distressRoot: t("result.distressRoot"),
+          analysisEntry: t("result.analysisEntry"),
+          transferenceHint: t("result.transferenceHint"),
           // Painter 相关
           myDream: t("result.myDream"),
           dreamAnalysis: t("result.dreamAnalysis"),
@@ -476,6 +528,12 @@ Page({
    */
   async pollVideoStatus() {
     const { result, videoPollCount, videoStatus } = this.data;
+
+    // 专业版不需要轮询视频
+    if (result && result.generationType === "professional") {
+      this.stopVideoPolling();
+      return;
+    }
 
     // 已完成/失败则停止
     if (videoStatus === "completed" || videoStatus === "failed") {
@@ -910,6 +968,115 @@ Page({
         });
       },
     });
+  },
+
+  /**
+   * Markdown 转 HTML（用于专业版显示）
+   */
+  markdownToHTML(markdown) {
+    if (!markdown || typeof markdown !== "string") {
+      return "";
+    }
+
+    let html = markdown;
+
+    // 先转义 HTML 特殊字符（但保留后续要处理的标记）
+    // 注意：这里先不转义，等处理完 markdown 后再转义普通文本
+
+    // 处理标题（必须在处理其他格式之前）
+    html = html.replace(/^### (.*$)/gim, '<h3 class="markdown-h3">$1</h3>');
+    html = html.replace(/^## (.*$)/gim, '<h2 class="markdown-h2">$1</h2>');
+    html = html.replace(/^# (.*$)/gim, '<h1 class="markdown-h1">$1</h1>');
+
+    // 处理加粗 **text**（需要处理嵌套的情况）
+    html = html.replace(/\*\*([^*]+)\*\*/g, '<strong class="markdown-bold">$1</strong>');
+
+    // 处理列表项 - item（需要处理多行）
+    const lines = html.split('\n');
+    const processedLines = [];
+    let inList = false;
+    
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i];
+      const listMatch = line.match(/^- (.+)$/);
+      
+      if (listMatch) {
+        if (!inList) {
+          processedLines.push('<ul class="markdown-ul">');
+          inList = true;
+        }
+        // 处理列表项中的加粗和其他格式
+        let listContent = listMatch[1]
+          .replace(/\*\*([^*]+)\*\*/g, '<strong class="markdown-bold">$1</strong>')
+          .trim();
+        processedLines.push(`<li class="markdown-li">${listContent}</li>`);
+      } else {
+        if (inList) {
+          processedLines.push('</ul>');
+          inList = false;
+        }
+        // 处理普通行中的加粗
+        let processedLine = line.replace(/\*\*([^*]+)\*\*/g, '<strong class="markdown-bold">$1</strong>');
+        // 如果不是标题，则作为普通文本
+        if (!processedLine.match(/^<h[1-3]/)) {
+          processedLines.push(processedLine);
+        } else {
+          processedLines.push(processedLine);
+        }
+      }
+    }
+    
+    if (inList) {
+      processedLines.push('</ul>');
+    }
+    
+    html = processedLines.join('\n');
+
+    // 处理段落：将连续的文本行（非标题、非列表）包裹在 p 标签中
+    html = html.split('\n');
+    const paragraphLines = [];
+    let currentParagraph = [];
+    
+    for (let i = 0; i < html.length; i++) {
+      const line = html[i].trim();
+      
+      if (!line) {
+        // 空行，结束当前段落
+        if (currentParagraph.length > 0) {
+          paragraphLines.push(`<p class="markdown-p">${currentParagraph.join(' ')}</p>`);
+          currentParagraph = [];
+        }
+      } else if (line.match(/^<h[1-3]|^<ul|^<\/ul|^<li/)) {
+        // 标题或列表，先结束当前段落
+        if (currentParagraph.length > 0) {
+          paragraphLines.push(`<p class="markdown-p">${currentParagraph.join(' ')}</p>`);
+          currentParagraph = [];
+        }
+        paragraphLines.push(line);
+      } else {
+        // 普通文本，加入当前段落
+        currentParagraph.push(line);
+      }
+    }
+    
+    // 处理最后一段
+    if (currentParagraph.length > 0) {
+      paragraphLines.push(`<p class="markdown-p">${currentParagraph.join(' ')}</p>`);
+    }
+    
+    html = paragraphLines.join('\n');
+
+    // 转义剩余的 HTML 特殊字符（但保留已处理的标签中的内容）
+    // 注意：rich-text 组件会自动处理，这里只转义未处理的 & 符号
+    // 由于 JavaScript 不支持负向后顾，我们采用更简单的方式
+    // 实际上 rich-text 会处理转义，所以这里可以简化
+
+    // 清理空的段落和多余的空白
+    html = html.replace(/<p class="markdown-p"><\/p>/g, '');
+    html = html.replace(/<p class="markdown-p">\s*<\/p>/g, '');
+    html = html.replace(/\n{3,}/g, '\n\n');
+
+    return html;
   },
 
   /**

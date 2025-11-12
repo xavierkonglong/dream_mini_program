@@ -34,6 +34,7 @@ Page({
     pointsCost: {
       image: 20, // 文生图消耗20积分
       video: 50, // 文生视频消耗50积分
+      professional: 100, // 专业版解析消耗100积分
     },
     isNewVersion: true, // 是否为新版本，用于控制文生视频按钮显示
     isLoggedIn: false, // 登录状态
@@ -63,6 +64,7 @@ Page({
           generationType: t("index.generationType"),
           textToImage: t("index.textToImage"),
           textToVideo: t("index.textToVideo"),
+          professionalAnalysis: t("index.professionalAnalysis"),
           analyze: t("index.analyze"),
           analyzing: t("index.analyzing"),
           tipsTitle: t("index.tipsTitle"),
@@ -233,6 +235,11 @@ Page({
           dreamDescription: dreamDescription.trim(),
           isPublic: isPublic,
         });
+      } else if (generationType === "professional") {
+        response = await dreamService.analyzeDreamProfessional({
+          dreamDescription: dreamDescription.trim(),
+          isPublic: isPublic,
+        });
       } else {
         response = await dreamService.analyzeDream({
           dreamDescription: dreamDescription.trim(),
@@ -282,16 +289,54 @@ Page({
         return;
       }
 
-      // 兼容新老结构：优先取旧结构的 data，否则取扁平对象
-      const raw = response && response.code === 0 && response.data ? response.data : response;
+      // 处理专业版解析的特殊数据结构
+      let resultData;
+      if (generationType === "professional" && response && response.code === 0 && response.data) {
+        // 专业版解析的新数据结构
+        const professionalData = response.data;
+        
+        // 只使用 analysis_markdown，不再使用 analysis_raw.raw_markdown（两者重复）
+        const analysisMarkdown = professionalData.analysis_markdown || "";
+        
+        // 完成进度条动画
+        this.completeProgressAnimation();
+        
+        // 转换为统一的数据结构
+        resultData = {
+          analysisId: professionalData.request_id || "",
+          dreamDescription: dreamDescription.trim(),
+          keywords: [], // 专业版不再从结构化数据提取关键词
+          interpretation: analysisMarkdown, // 直接使用 markdown 作为解析内容
+          imagePrompt: "",
+          imageTaskId: "",
+          imageStatus: "none", // 专业版没有图片，设置为 "none" 表示不需要轮询
+          imageUrl: null,
+          guidingQuestionsJson: "", // 专业版不再有引导性问题
+          // 视频相关（专业版不支持）
+          videoPrompt: null,
+          videoStatus: "none", // 专业版没有视频，设置为 "none" 表示不需要轮询
+          videoUrl: null,
+          generationType: generationType,
+          // 专业版特有字段
+          pointsBalance: professionalData.points_balance || 0,
+          requestId: professionalData.request_id || "",
+          // 保存 markdown 格式的分析内容（主要数据源）
+          analysisMarkdown: analysisMarkdown
+        };
+      } else {
+        // 兼容新老结构：优先取旧结构的 data，否则取扁平对象
+        const raw = response && response.code === 0 && response.data ? response.data : response;
 
-      // 基本有效性校验（至少需要有 analysisId/analysis_id）
-      if (raw && (raw.analysisId || raw.analysis_id)) {
+        // 基本有效性校验（至少需要有 analysisId/analysis_id）
+        if (!raw || (!raw.analysisId && !raw.analysis_id)) {
+          throw new Error(response?.message || "解析失败");
+        }
+        
         // 完成进度条动画
         this.completeProgressAnimation();
 
         // 归一化字段到 camelCase，并附加生成类型
-        const resultData = {
+        resultData = {
           analysisId: raw.analysisId || raw.analysis_id,
           dreamDescription: raw.dreamDescription || raw.dream_description || "",
           keywords: raw.keywords || [],
@@ -308,6 +353,9 @@ Page({
           videoUrl: raw.videoUrl || raw.video_url || null,
           generationType: generationType,
         };
+      }
+
+      if (resultData) {
 
         // 使用全局通知机制
         app.notifyAnalysisComplete(resultData);

@@ -169,6 +169,79 @@
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
 }
 
+/* Markdown 内容样式（专业版） */
+.markdown-content {
+  width: 100%;
+  font-size: 28rpx;
+  line-height: 1.8;
+  color: #333;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
+}
+
+/* Markdown 标题样式 */
+.markdown-h1 {
+  font-size: 36rpx;
+  font-weight: 700;
+  color: #1a1a1a;
+  margin: 32rpx 0 24rpx 0;
+  padding-bottom: 16rpx;
+  border-bottom: 2rpx solid rgba(139, 92, 246, 0.2);
+  line-height: 1.4;
+}
+
+.markdown-h2 {
+  font-size: 32rpx;
+  font-weight: 600;
+  color: #2d2d2d;
+  margin: 28rpx 0 20rpx 0;
+  padding-left: 16rpx;
+  border-left: 4rpx solid #8B5CF6;
+  line-height: 1.4;
+}
+
+.markdown-h3 {
+  font-size: 30rpx;
+  font-weight: 600;
+  color: #3d3d3d;
+  margin: 24rpx 0 16rpx 0;
+  line-height: 1.4;
+}
+
+/* Markdown 段落样式 */
+.markdown-p {
+  font-size: 28rpx;
+  line-height: 1.8;
+  color: #333;
+  margin: 16rpx 0;
+  text-align: justify;
+}
+
+/* Markdown 加粗样式 */
+.markdown-bold {
+  font-weight: 600;
+  color: #8B5CF6;
+  background: rgba(139, 92, 246, 0.08);
+  padding: 2rpx 6rpx;
+  border-radius: 4rpx;
+}
+
+/* Markdown 列表样式 */
+.markdown-ul {
+  margin: 20rpx 0;
+  padding-left: 40rpx;
+  list-style: disc;
+  list-style-position: outside;
+}
+
+.markdown-li {
+  font-size: 28rpx;
+  line-height: 1.8;
+  color: #333;
+  margin: 12rpx 0;
+  padding-left: 8rpx;
+  display: list-item;
+}
+
 /* AI免责声明 */
 .ai-disclaimer {
   margin-top: 20rpx;

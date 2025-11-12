@@ -60,6 +60,32 @@ function analyzeDreamWithVideo(data) {
 }
 
 /**
+ * 专业版梦境解析
+ * @param {Object} data 梦境数据
+ * @param {string} data.dreamDescription 梦境描述
+ * @param {number} [data.isPublic] 是否公开 0-仅自己 1-公开，默认0
+ * @returns {Promise} 解析结果
+ */
+function analyzeDreamProfessional(data) {
+  // 获取当前语言并转换为接口需要的格式
+  const currentLang = getLang();
+  const languageMap = {
+    'zh': 'zh-CN',
+    'en': 'en-US'
+  };
+  const apiLanguage = languageMap[currentLang] || 'zh-CN';
+
+  return post('/workflow/pro/analyze', {
+    language: apiLanguage,
+    prompt: data.dreamDescription
+  }, {
+    showLoading: false,
+    loadingText: t('dream.analyzingText'),
+    timeout: 120000 // 梦境解析专用超时时间：2分钟
+  });
+}
+
+/**
  * 查询视频生成任务状态
  * @param {string} taskId 视频任务ID
  * @returns {Promise} 任务状态信息
@@ -170,6 +196,7 @@ function getDiaryDetail(postId) {
 module.exports = {
   analyzeDream,
   analyzeDreamWithVideo,
+  analyzeDreamProfessional,
   getVideoStatus,
   getDreamStatus,
   getDreamHistory,

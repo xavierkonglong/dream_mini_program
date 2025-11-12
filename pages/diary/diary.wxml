@@ -37,8 +37,18 @@
       <view class="section-title">{{i18n.diary.dreamAnalysis}}</view>
       <view class="cloud-card analysis-card">
         <view class="analysis-content">
-          <view class="analysis-paragraph" wx:for="{{result.interpretationParagraphs}}" wx:key="index" user-select="{{true}}">
-            {{item}}
+          <!-- 专业版：使用 rich-text 渲染 markdown -->
+          <rich-text 
+            wx:if="{{result.generationType === 'professional' && result.interpretationHTML}}" 
+            nodes="{{result.interpretationHTML}}" 
+            class="markdown-content"
+            user-select="{{true}}"
+          ></rich-text>
+          <!-- 普通版：使用段落显示 -->
+          <view wx:else>
+            <view class="analysis-paragraph" wx:for="{{result.interpretationParagraphs}}" wx:key="index" user-select="{{true}}">
+              {{item}}
+            </view>
           </view>
         </view>
         <view class="ai-disclaimer">
@@ -161,21 +171,21 @@
 
     <!-- 发布/海报 按钮横排 -->
     <view class="actions-section" wx:if="{{result}}">
-      <!-- 已发布到社区，显示设置为仅个人可见按钮 -->
-      <button class="action-btn private-button small" wx:if="{{result.analysisId && isLoggedIn && result.visibility === 1}}" bindtap="onSetToPrivate">
+      <!-- 已发布到社区，显示设置为仅个人可见按钮（专业版不显示） -->
+      <button class="action-btn private-button small" wx:if="{{result.generationType !== 'professional' && result.analysisId && isLoggedIn && result.visibility === 1}}" bindtap="onSetToPrivate">
         <text class="private-icon">🔒</text>
         <text class="private-text">{{i18n.diary.setToPrivate}}</text>
       </button>
 
-      <!-- 未发布到社区，显示发布按钮 -->
-      <button class="action-btn publish-button small" wx:elif="{{result.analysisId && isLoggedIn}}" bindtap="onPublishToCommunity">
+      <!-- 未发布到社区，显示发布按钮（专业版不显示） -->
+      <button class="action-btn publish-button small" wx:elif="{{result.generationType !== 'professional' && result.analysisId && isLoggedIn}}" bindtap="onPublishToCommunity">
         <text class="publish-icon">📤</text>
         <text class="publish-text">{{i18n.diary.publish}}</text>
       </button>
 
-      <!-- 生成海报按钮：只在视频或图片生成完成后显示 -->
-      <!-- 条件：1.视频模式：已完成(videoStatus=2)且有视频URL 2.图片模式：有图片URL且不在加载中 3.纯文本模式：没有图片和视频提示词 -->
-      <button class="action-btn poster-button small" wx:if="{{(isVideoType && videoStatus === 2 && videoUrl) || (!isVideoType && result.imageUrl && !imageLoading) || (!result.imagePrompt && !result.videoPrompt)}}" bindtap="onGeneratePoster">
+      <!-- 生成海报按钮：只在视频或图片生成完成后显示，专业版不显示 -->
+      <!-- 条件：1.视频模式：已完成(videoStatus=2)且有视频URL 2.图片模式：有图片URL且不在加载中 3.纯文本模式：没有图片和视频提示词 4.排除专业版 -->
+      <button class="action-btn poster-button small" wx:if="{{result.generationType !== 'professional' && ((isVideoType && videoStatus === 2 && videoUrl) || (!isVideoType && result.imageUrl && !imageLoading) || (!result.imagePrompt && !result.videoPrompt))}}" bindtap="onGeneratePoster">
         <text class="poster-icon">🎨</text>
         <text class="poster-text">{{i18n.diary.generatePoster}}</text>
       </button>

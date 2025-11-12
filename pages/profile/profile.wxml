@@ -64,7 +64,11 @@
               <!-- 内容卡片 -->
               <view class="dream-card">
                 <view class="dream-header">
-                  <text class="dream-title">{{item.title}}</text>
+                  <view class="dream-title-wrapper">
+                    <text class="dream-title">{{item.title}}</text>
+                    <!-- 专业版标识 -->
+
+                  </view>
                 </view>
 
                 <!-- 视频卡片 -->
@@ -77,6 +81,10 @@
 
                 <!-- 图片卡片 -->
                 <image class="dream-image" src="{{item.imageUrl}}" mode="aspectFill" wx:elif="{{item.imageUrl}}"></image>
+
+                <view class="professional-badge" wx:if="{{item.analysisType === 'pro'}}">
+                  <text class="badge-text">{{i18n.profile.professionalAnalysis}}</text>
+                </view>
               </view>
             </view>
           </view>

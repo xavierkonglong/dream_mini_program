@@ -45,8 +45,18 @@
       <view class="section-title">{{i18n.result.dreamAnalysis}}</view>
       <view class="cloud-card analysis-card">
         <view class="analysis-content">
-          <view class="analysis-paragraph" wx:for="{{result.interpretationParagraphs}}" wx:key="index" user-select="{{true}}">
-            {{item}}
+          <!-- 专业版：使用 rich-text 渲染 markdown -->
+          <rich-text 
+            wx:if="{{result.generationType === 'professional' && result.interpretationHTML}}" 
+            nodes="{{result.interpretationHTML}}" 
+            class="markdown-content"
+            user-select="{{true}}"
+          ></rich-text>
+          <!-- 普通版：使用段落显示 -->
+          <view wx:else>
+            <view class="analysis-paragraph" wx:for="{{result.interpretationParagraphs}}" wx:key="index" user-select="{{true}}">
+              {{item}}
+            </view>
           </view>
         </view>
         <view class="ai-disclaimer">
@@ -54,6 +64,7 @@
         </view>
       </view>
     </view>
+
 
     <!-- 疏导性问题 -->
     <view class="guiding-questions-section" wx:if="{{result.guidingQuestion1 || result.guidingQuestion2}}">
@@ -174,8 +185,8 @@
       </view>
     </view>
 
-    <!-- 发布/海报 按钮横排 -->
-    <view class="actions-section" wx:if="{{result}}">
+    <!-- 发布/海报 按钮横排（专业版不显示） -->
+    <view class="actions-section" wx:if="{{result && result.generationType !== 'professional'}}">
       <button class="action-btn publish-button small" wx:if="{{result.analysisId && isLoggedIn}}" bindtap="onTogglePublishOrPrivate">
         <text class="publish-icon">📤</text>
         <text class="publish-text">{{result.visibility === 1 ? i18n.result.setToPrivate : i18n.result.publish}}</text>

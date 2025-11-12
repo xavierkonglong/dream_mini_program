@@ -333,11 +333,43 @@
   margin-bottom: 12rpx;
 }
 
+.dream-title-wrapper {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12rpx;
+  flex: 1;
+}
+
 .dream-title {
   font-size: 28rpx;
   color: #333;
   font-weight: 600;
   flex: 1;
+  min-width: 0;
+}
+
+/* 专业版标识 */
+.professional-badge {
+  position: absolute;
+  top: -15rpx;
+  right: 10rpx;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #8B5CF6 0%, #A855F7 100%);
+  color: #ffffff;
+  font-size: 20rpx;
+  font-weight: 600;
+  padding: 4rpx 12rpx;
+  border-radius: 12rpx;
+  box-shadow: 0 2rpx 8rpx rgba(139, 92, 246, 0.3);
+  white-space: nowrap;
+}
+
+.badge-text {
+  font-size: 22rpx;
+  line-height: 1.2;
 }
 
 .dream-image {

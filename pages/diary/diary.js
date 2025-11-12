@@ -360,13 +360,16 @@ Page({
           }
         }
 
+        // 判断是否是专业版
+        const isProfessional = diaryData.analysisType === "pro";
+        
         // 构建result对象，兼容原有格式
         const result = {
           analysisId: diaryData.analysisId, // 使用API返回的analysisId
           postId: diaryData.postId, // 保留postId字段
           dreamDescription: diaryData.dreamDescription,
           keywords: keywords,
-          interpretation: diaryData.interpretation,
+          interpretation: isProfessional ? (diaryData.proMarkdown || "") : (diaryData.interpretation || ""),
           imagePrompt: diaryData.imagePrompt,
           imageUrl: diaryData.imageUrl,
           videoPrompt: diaryData.videoPrompt,
@@ -377,10 +380,16 @@ Page({
           createdAt: diaryData.createdAt,
           visibility: diaryData.visibility,
           hasFeedback: diaryData.hasFeedback || false, // 是否已提交反馈
+          analysisType: diaryData.analysisType || "", // 保存分析类型
         };
 
-        // 格式化解析内容，进行智能分段
-        if (result.interpretation) {
+        // 格式化解析内容
+        if (isProfessional && diaryData.proMarkdown) {
+          // 专业版：将 markdown 转换为 HTML
+          result.interpretationHTML = this.markdownToHTML(diaryData.proMarkdown);
+          result.generationType = "professional";
+        } else if (result.interpretation) {
+          // 普通版：使用智能分段
           result.interpretationParagraphs = this.formatInterpretation(
             result.interpretation
           );
@@ -422,6 +431,18 @@ Page({
           }
         } else {
           console.log("loadDiaryDetail - 没有guidingQuestionsJson字段");
+        }
+
+        // 专业版不需要轮询图片和视频
+        if (isProfessional) {
+          result.generationType = "professional";
+          this.setData({
+            isVideoType: false,
+            result,
+            loading: false,
+          });
+          wx.hideLoading();
+          return;
         }
 
         // 判断内容类型：根据 videoPrompt 和 imagePrompt 来判断
@@ -557,7 +578,11 @@ Page({
   async pollVideoStatus() {
     const { result, videoPollCount, videoStatus } = this.data;
 
-
+    // 专业版不需要轮询视频
+    if (result && result.generationType === "professional") {
+      this.stopVideoPolling();
+      return;
+    }
 
     // 已完成/失败则停止
     if (videoStatus === 2 || videoStatus === 3) {
@@ -608,6 +633,9 @@ Page({
           keywords = result.keywords || [];
         }
 
+        // 判断是否是专业版
+        const isProfessional = diaryData.analysisType === "pro";
+        
         // 更新完整的 result 对象，包括所有字段
         const updatedResult = {
           ...result,
@@ -615,17 +643,23 @@ Page({
           postId: diaryData.postId || result.postId,
           dreamDescription: diaryData.dreamDescription || result.dreamDescription || "",
           keywords: keywords,
-          interpretation: diaryData.interpretation || result.interpretation || "",
+          interpretation: isProfessional ? (diaryData.proMarkdown || "") : (diaryData.interpretation || result.interpretation || ""),
           imagePrompt: diaryData.imagePrompt || result.imagePrompt || "",
           imageUrl: diaryData.imageUrl || result.imageUrl || null, // 重要：更新 imageUrl
           videoPrompt: diaryData.videoPrompt || result.videoPrompt || "",
           videoUrl: diaryData.videoUrl || result.videoUrl || null,
           guidingQuestionsJson: diaryData.guidingQuestionsJson || result.guidingQuestionsJson || "",
           hasFeedback: result.hasFeedback || false,
+          generationType: isProfessional ? "professional" : (result.generationType || "video"),
+          analysisType: diaryData.analysisType || result.analysisType || "",
         };
 
         // 格式化解析内容
-        if (updatedResult.interpretation) {
+        if (isProfessional && diaryData.proMarkdown) {
+          // 专业版：将 markdown 转换为 HTML
+          updatedResult.interpretationHTML = this.markdownToHTML(diaryData.proMarkdown);
+        } else if (updatedResult.interpretation) {
+          // 普通版：使用智能分段
           updatedResult.interpretationParagraphs = this.formatInterpretation(
             updatedResult.interpretation
           );
@@ -759,6 +793,13 @@ Page({
     const { result, imagePollCount, imageLoading } = this.data;
     if (!imageLoading) return;
 
+    // 专业版不需要轮询图片
+    if (result && result.generationType === "professional") {
+      this.stopImagePolling();
+      this.setData({ imageLoading: false });
+      return;
+    }
+
     // 达到最大次数后停止
     if (imagePollCount >= 60) {
       this.stopImagePolling();
@@ -794,6 +835,9 @@ Page({
           keywords = result.keywords || [];
         }
 
+        // 判断是否是专业版
+        const isProfessional = diaryData.analysisType === "pro";
+        
         // 归一化结构：保留原有 result 的所有字段，只更新轮询返回的字段
         const normalized = {
           ...result, // 先保留原有所有字段
@@ -802,19 +846,24 @@ Page({
           postId: diaryData.postId || result.postId,
           dreamDescription: diaryData.dreamDescription || result.dreamDescription || "",
           keywords: keywords,
-          interpretation: diaryData.interpretation || result.interpretation || "",
+          interpretation: isProfessional ? (diaryData.proMarkdown || "") : (diaryData.interpretation || result.interpretation || ""),
           imagePrompt: diaryData.imagePrompt || result.imagePrompt || "",
           // 注意：这里优先使用 API 返回的新值，如果 API 没有返回则保持旧值
           imageUrl: diaryData.imageUrl !== undefined && diaryData.imageUrl !== null ? diaryData.imageUrl : result.imageUrl,
           videoPrompt: diaryData.videoPrompt || result.videoPrompt || "",
           videoUrl: diaryData.videoUrl || result.videoUrl || null,
           guidingQuestionsJson: diaryData.guidingQuestionsJson || result.guidingQuestionsJson || "",
-          generationType: result.generationType || "image",
+          generationType: isProfessional ? "professional" : (result.generationType || "image"),
           hasFeedback: result.hasFeedback || false, // 保持原有的hasFeedback值，不从轮询接口同步
+          analysisType: diaryData.analysisType || result.analysisType || "",
         };
 
         // 格式化解析内容
-        if (normalized.interpretation) {
+        if (isProfessional && diaryData.proMarkdown) {
+          // 专业版：将 markdown 转换为 HTML
+          normalized.interpretationHTML = this.markdownToHTML(diaryData.proMarkdown);
+        } else if (normalized.interpretation) {
+          // 普通版：使用智能分段
           normalized.interpretationParagraphs = this.formatInterpretation(
             normalized.interpretation
           );
@@ -1122,6 +1171,107 @@ Page({
         });
       },
     });
+  },
+
+  /**
+   * Markdown 转 HTML（用于专业版显示）
+   */
+  markdownToHTML(markdown) {
+    if (!markdown || typeof markdown !== "string") {
+      return "";
+    }
+
+    let html = markdown;
+
+    // 处理标题（必须在处理其他格式之前）
+    html = html.replace(/^### (.*$)/gim, '<h3 class="markdown-h3">$1</h3>');
+    html = html.replace(/^## (.*$)/gim, '<h2 class="markdown-h2">$1</h2>');
+    html = html.replace(/^# (.*$)/gim, '<h1 class="markdown-h1">$1</h1>');
+
+    // 处理加粗 **text**（需要处理嵌套的情况）
+    html = html.replace(/\*\*([^*]+)\*\*/g, '<strong class="markdown-bold">$1</strong>');
+
+    // 处理列表项 - item（需要处理多行）
+    const lines = html.split('\n');
+    const processedLines = [];
+    let inList = false;
+    
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i];
+      const listMatch = line.match(/^- (.+)$/);
+      
+      if (listMatch) {
+        if (!inList) {
+          processedLines.push('<ul class="markdown-ul">');
+          inList = true;
+        }
+        // 处理列表项中的加粗和其他格式
+        let listContent = listMatch[1]
+          .replace(/\*\*([^*]+)\*\*/g, '<strong class="markdown-bold">$1</strong>')
+          .trim();
+        processedLines.push(`<li class="markdown-li">${listContent}</li>`);
+      } else {
+        if (inList) {
+          processedLines.push('</ul>');
+          inList = false;
+        }
+        // 处理普通行中的加粗
+        let processedLine = line.replace(/\*\*([^*]+)\*\*/g, '<strong class="markdown-bold">$1</strong>');
+        // 如果不是标题，则作为普通文本
+        if (!processedLine.match(/^<h[1-3]/)) {
+          processedLines.push(processedLine);
+        } else {
+          processedLines.push(processedLine);
+        }
+      }
+    }
+    
+    if (inList) {
+      processedLines.push('</ul>');
+    }
+    
+    html = processedLines.join('\n');
+
+    // 处理段落：将连续的文本行（非标题、非列表）包裹在 p 标签中
+    html = html.split('\n');
+    const paragraphLines = [];
+    let currentParagraph = [];
+    
+    for (let i = 0; i < html.length; i++) {
+      const line = html[i].trim();
+      
+      if (!line) {
+        // 空行，结束当前段落
+        if (currentParagraph.length > 0) {
+          paragraphLines.push(`<p class="markdown-p">${currentParagraph.join(' ')}</p>`);
+          currentParagraph = [];
+        }
+      } else if (line.match(/^<h[1-3]|^<ul|^<\/ul|^<li/)) {
+        // 标题或列表，先结束当前段落
+        if (currentParagraph.length > 0) {
+          paragraphLines.push(`<p class="markdown-p">${currentParagraph.join(' ')}</p>`);
+          currentParagraph = [];
+        }
+        paragraphLines.push(line);
+      } else {
+        // 普通文本，加入当前段落
+        currentParagraph.push(line);
+      }
+    }
+    
+    // 处理最后一段
+    if (currentParagraph.length > 0) {
+      paragraphLines.push(`<p class="markdown-p">${currentParagraph.join(' ')}</p>`);
+    }
+    
+    html = paragraphLines.join('\n');
+
+    // 清理空的段落和多余的空白
+    html = html.replace(/<p class="markdown-p"><\/p>/g, '');
+    html = html.replace(/<p class="markdown-p">\s*<\/p>/g, '');
+    html = html.replace(/\n{3,}/g, '\n\n');
+
+    return html;
   },
 
   /**

@@ -10,7 +10,7 @@ const ENV_CONFIG = {
   // 开发环境
   dev: {
     env: 'dev',
-    baseURL: 'http://192.168.1.56:8087/api/v1',
+    baseURL: 'http://192.168.1.55:8087/api/v1',
     enableLog: true,
     enableMock: true,
     enableDebug: true,

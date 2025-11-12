@@ -104,6 +104,7 @@ Page({
           jumpFailed: t("profile.jumpFailed"),
           loadMoreFailed: t("profile.loadMoreFailed"),
           postIdNotFound: t("profile.postIdNotFound"),
+          professionalAnalysis: t("profile.professionalAnalysis"),
         },
         app: {
           shareTitle: t("app.shareTitle"),
@@ -582,6 +583,7 @@ Page({
             likeCount: item.likeCount || 0,
             favoriteCount: item.favoriteCount || 0,
             createdAt: item.createdAt,
+            analysisType: item.analysisType || "", // 保存分析类型（pro 表示专业版）
           };
         });
 
