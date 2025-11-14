@@ -5,8 +5,9 @@
     "van-collapse-item": "@vant/weapp/collapse-item/index"
   },
   "navigationBarTitleText": "梦境日记",
-  "navigationBarBackgroundColor": "#8B5CF6",
-  "navigationBarTextStyle": "white",
-  "backgroundColor": "#8B5CF6",
-  "backgroundTextStyle": "light"
+  "navigationBarBackgroundColor": "#EDE3FC",
+  "navigationBarTextStyle": "black",
+  "backgroundTextStyle": "light",
+  "backgroundColorTop": "#EDE3FC",
+  "backgroundColorBottom": "#EDE3FC"
 }

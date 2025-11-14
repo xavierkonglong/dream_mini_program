@@ -47,23 +47,21 @@
   font-size: 36rpx;
   font-weight: bold;
   font-family: "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "黑体", sans-serif;
-  color: #ffffff;
-  text-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.5);
+  color: rgba(81, 56, 106, 1);
   margin-bottom: 8rpx;
 }
 
 .user-id {
   font-size: 24rpx;
   font-family: "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "黑体", sans-serif;
-  color: rgba(255, 255, 255, 0.9);
-  text-shadow: 0 1rpx 4rpx rgba(0, 0, 0, 0.4);
+  color: rgba(81, 56, 106, 1);
   margin-bottom: 6rpx;
 }
 
 .join-date {
   font-size: 22rpx;
   font-family: "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "黑体", sans-serif;
-  color: rgba(255, 255, 255, 0.7);
+  color: rgba(81, 56, 106, 1);
   text-shadow: 0 1rpx 3rpx rgba(0, 0, 0, 0.4);
 }
 
@@ -98,7 +96,7 @@
 }
 
 .menu-item:active {
-  background-color: rgba(255, 255, 255, 0.08);
+  background-color: #c9c4cf;
   transform: scale(0.98);
 }
 
@@ -109,9 +107,9 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(255, 255, 255, 0.15);
+  /* background: rgba(255, 255, 255, 0.15); */
   border-radius: 10rpx;
-  color: #8B5CF6;
+  color: rgba(86, 75, 121, 1);
   border: 1rpx solid rgba(255, 255, 255, 0.1);
 }
 
@@ -119,13 +117,13 @@
   flex: 1;
   font-size: 28rpx;
   font-family: "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "黑体", sans-serif;
-  color: #000000;
+  color: rgba(86, 75, 121, 1);
   font-weight: 500;
   text-shadow: 0 1rpx 3rpx rgba(0, 0, 0, 0.4);
 }
 
 .menu-arrow {
-  color: #000000;
+  color: rgba(86, 75, 121, 1);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -134,7 +132,7 @@
 .menu-version {
   font-size: 24rpx;
   font-family: "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "黑体", sans-serif;
-  color: #000000;
+  color: rgba(86, 75, 121, 1);
   font-weight: normal;
   text-shadow: 0 1rpx 2rpx rgba(0, 0, 0, 0.3);
 }
@@ -179,30 +177,30 @@
   .profile-header {
     padding: 40rpx 30rpx 30rpx;
   }
-  
+
   .avatar {
     width: 100rpx;
     height: 100rpx;
     border-radius: 50rpx;
     margin-right: 20rpx;
   }
-  
+
   .username {
     font-size: 32rpx;
   }
-  
+
   .menu-container {
     padding: 0 30rpx;
   }
-  
+
   .menu-item {
     padding: 25rpx 30rpx;
   }
-  
+
   .menu-text {
     font-size: 26rpx;
   }
-  
+
   .logout-section {
     padding: 0 30rpx;
   }

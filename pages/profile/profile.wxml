@@ -12,6 +12,10 @@
         <text class="username">{{userInfo.userName || i18n.profile.dreamExplorer}}</text>
         <text class="join-date" wx:if="{{userInfo.createTime}}">{{i18n.profile.joinTime}}{{userInfo.createTime}}</text>
       </view>
+      <view class="membership-btn-wrapper {{isVip ? 'vip-active' : ''}}" catchtap="onOpenMembership">
+        <van-icon name="vip-card-o" size="40rpx" color="{{isVip ? '#ffd700' : '#8b5cf6'}}" />
+        <text class="membership-btn-text">{{isVip ? i18n.profile.vip : i18n.profile.openMembership}}</text>
+      </view>
     </view>
 
     <!-- 未登录状态 -->

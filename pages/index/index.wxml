@@ -1,39 +1,61 @@
 <!--首页-->
 <view class="container language-{{language}}">
-  <!-- 背景图片 -->
-  <image class="background-image" src="{{imageUrls.BACKGROUNDS.INDEX}}" mode="aspectFill"></image>
-
   <!-- 右上角功能区 -->
-  <view class="top-actions">
-    <!-- 语言切换按钮 -->
+  <!-- <view class="top-actions">
     <view class="language-toggle" bindtap="onLanguageToggle">
       <text class="language-text">{{language === 'zh' ? 'EN' : '中文'}}</text>
     </view>
-  </view>
+  </view> -->
   <!-- 左上角功能区 -->
-  <view class="top-actions-left" wx:if="{{isLoggedIn}}">
-    <!-- 会员标识 -->
-    <!-- <view class="member-badge {{isMember ? 'member' : 'non-member'}}">
-      <van-icon name="{{isMember ? 'vip-card-o' : 'user-o'}}" size="32rpx" color="{{isMember ? '#ffd700' : '#999'}}" />
-      <text class="member-text">{{isMember ? '会员' : '普通'}}</text>
-    </view> -->
-    <!-- 积分显示 -->
+  <!-- <view class="top-actions-left" wx:if="{{isLoggedIn}}">
     <view class="points-display" bindtap="goToCheckin">
       <van-icon name="medal-o" size="48rpx" color="#ffae00" />
       <text class="points-text">{{i18n.index.checkinToGetPoints}}</text>
     </view>
-  </view>
+  </view> -->
 
   <!-- 主内容区域 -->
   <view class="main-content">
+
+    <view class="member-language">
+      <view class="member-language-fraction">
+        <view class="member-language-fraction-left">
+          <view class="member-language-avatar">
+            <view class="member-language-v2-avatar">
+              <view class="member-language-v3-avatar">
+                <image class="avatar-v3" src="https://dulele.org.cn/images/assest/index_v2_ip_t.png" mode="" />
+                <image class="crown-icon" src="data:image/svg+xml;charset=utf-8;base64,Cjxzdmcgd2lkdGg9IjU0IiBoZWlnaHQ9IjU1IiB2aWV3Qm94PSIwIDAgNTQgNTUiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxnIGZpbHRlcj0idXJsKCNmaWx0ZXIwX2RfMzMxXzQxODUpIj4KPHBhdGggZD0iTTEzLjMyNzMgMTEuMTA4NUw4LjkwMDEgMzIuNDg0MUwzMS4yNjA0IDQxLjI3MDFMNDIuNzA2OCAyMi42NTQ0TDMxLjg1MjEgMjUuODAyOUwzMS4yNDA3IDkuODA5OThMMTkuMjQ0NiAyMC44NTE3TDEzLjMyNzMgMTEuMTA4NVoiIGZpbGw9IiNFMzkwMUYiLz4KPHBhdGggZD0iTTM0LjAzMDEgOC41MzQwN0MzMy40NDA4IDEwLjAxNzggMzIuMDI1NyAxMC44NDc2IDMwLjg1ODIgMTAuMzg4N0MyOS42OTYgOS45Mzc0NyAyOS4yMjc0IDguMzYwNTEgMjkuODE3MiA2Ljg4MDk0QzMwLjQwNjUgNS4zOTcyMyAzMS44MjE2IDQuNTY3NDUgMzIuOTg5MiA1LjAyNjM0QzM0LjE1MiA1LjQ4MTY5IDM0LjYxOTQgNy4wNTAzNSAzNC4wMzAxIDguNTM0MDdaIiBmaWxsPSIjREVCNjNCIi8+CjxwYXRoIGQ9Ik0xMy4zMjczIDExLjEwODVMOC45MDAxIDMyLjQ4NDFMMzEuMjYwNCA0MS4yNzAxTDEzLjMyNzMgMTEuMTA4NVoiIGZpbGw9IiNFQkE0MzgiLz4KPHBhdGggZD0iTTQyLjcwNjEgMjIuNjUwMUwzMS4yNTU1IDQxLjI2NjRMOC45MDAwNyAzMi40ODM5TDQyLjcwNjEgMjIuNjUwMVoiIGZpbGw9IiNFQkE0MzgiLz4KPHBhdGggZD0iTTguODk5ODYgMzIuNDgzOEwzMS4yNjAxIDQxLjI2OThMMjMuNTA3MiAyOC4yMzQ2TDguODk5ODYgMzIuNDgzOFoiIGZpbGw9IiNFQkIxMjYiLz4KPHBhdGggZD0iTTQ0LjU5OTggMjIuMDI5MkM0NC4zNjA4IDIyLjYyOTEgNDMuOTQ5NiAyMy4xMzE1IDQzLjQ0OCAyMy40MjY3QzQyLjk0NjQgMjMuNzIxOSA0Mi40MDEzIDIzLjc4MTYgNDEuOTM0MiAyMy41OTIyQzQxLjQ2NzggMjMuNDA2OCA0MS4xMDgxIDIyLjk5MzQgNDAuOTQ0NCAyMi40MzY0QzQwLjc4MDcgMjEuODc5MyA0MC44MjU4IDIxLjIzNiA0MS4wNjA2IDIwLjYzNjdDNDEuMjk5NiAyMC4wMzY4IDQxLjcxMDggMTkuNTM0NCA0Mi4yMTI0IDE5LjIzOTJDNDIuNzE0IDE4Ljk0NCA0My4yNTkxIDE4Ljg4NDMgNDMuNzI5NyAxOS4wNjlDNDQuMTk2MSAxOS4yNTQzIDQ0LjU1NTggMTkuNjY3NyA0NC43MTk1IDIwLjIyNDhDNDQuODc5MSAyMC43ODI1IDQ0LjgzNTIgMjEuNDM0IDQ0LjU5OTggMjIuMDI5MlpNMTUuNzA5NCAxMC42NzgxQzE1LjQ3MDQgMTEuMjc4IDE1LjA1NDUgMTEuNzc2OSAxNC41NTc2IDEyLjA3NTZDMTQuMDYwMiAxMi4zNzAxIDEzLjUxMDkgMTIuNDMwNSAxMy4wNDM5IDEyLjI0MUMxMi41Nzc0IDEyLjA1NTcgMTIuMjE3NyAxMS42NDIzIDEyLjA1NCAxMS4wODUyQzExLjg5MDMgMTAuNTI4MSAxMS45MzU0IDkuODg0ODkgMTIuMTcwMiA5LjI4NTU5QzEyLjQwOTIgOC42ODU2NyAxMi44MjA0IDguMTgzMjUgMTMuMzIyIDcuODg4MDdDMTMuODIzNiA3LjU5Mjg5IDE0LjM2ODcgNy41MzMxNCAxNC44MzkzIDcuNzE3ODZDMTUuMzA1OCA3LjkwMzIgMTUuNjY1NSA4LjMxNjU4IDE1LjgyOTIgOC44NzM2NkMxNS45ODg3IDkuNDMxMzUgMTUuOTQ0OSAxMC4wODI5IDE1LjcwOTQgMTAuNjc4MVoiIGZpbGw9IiNERUI2M0IiLz4KPC9nPgo8ZGVmcz4KPGZpbHRlciBpZD0iZmlsdGVyMF9kXzMzMV80MTg1IiB4PSItOS43Mjc0OGUtMDUiIHk9Ii05LjcyNzQ4ZS0wNSIgd2lkdGg9IjUzLjcxNDEiIGhlaWdodD0iNTQuMTcwMSIgZmlsdGVyVW5pdHM9InVzZXJTcGFjZU9uVXNlIiBjb2xvci1pbnRlcnBvbGF0aW9uLWZpbHRlcnM9InNSR0IiPgo8ZmVGbG9vZCBmbG9vZC1vcGFjaXR5PSIwIiByZXN1bHQ9IkJhY2tncm91bmRJbWFnZUZpeCIvPgo8ZmVDb2xvck1hdHJpeCBpbj0iU291cmNlQWxwaGEiIHR5cGU9Im1hdHJpeCIgdmFsdWVzPSIwIDAgMCAwIDAgMCAwIDAgMCAwIDAgMCAwIDAgMCAwIDAgMCAxMjcgMCIgcmVzdWx0PSJoYXJkQWxwaGEiLz4KPGZlT2Zmc2V0IGR5PSI0Ii8+CjxmZUdhdXNzaWFuQmx1ciBzdGREZXZpYXRpb249IjQuNDUiLz4KPGZlQ29tcG9zaXRlIGluMj0iaGFyZEFscGhhIiBvcGVyYXRvcj0ib3V0Ii8+CjxmZUNvbG9yTWF0cml4IHR5cGU9Im1hdHJpeCIgdmFsdWVzPSIwIDAgMCAwIDEgMCAwIDAgMCAxIDAgMCAwIDAgMC44NDQzNDYgMCAwIDAgMC4yNSAwIi8+CjxmZUJsZW5kIG1vZGU9Im5vcm1hbCIgaW4yPSJCYWNrZ3JvdW5kSW1hZ2VGaXgiIHJlc3VsdD0iZWZmZWN0MV9kcm9wU2hhZG93XzMzMV80MTg1Ii8+CjxmZUJsZW5kIG1vZGU9Im5vcm1hbCIgaW49IlNvdXJjZUdyYXBoaWMiIGluMj0iZWZmZWN0MV9kcm9wU2hhZG93XzMzMV80MTg1IiByZXN1bHQ9InNoYXBlIi8+CjwvZmlsdGVyPgo8L2RlZnM+Cjwvc3ZnPgo=" mode="aspectFit"></image>
+              </view>
+            </view>
+          </view>
+        </view>
+
+        <view class="avatar-number">
+          <text class="avatar-number-text">{{totalPoints}}</text>
+          <image class="diamond-icon" src="data:image/svg+xml;charset=utf-8;base64,Cjxzdmcgd2lkdGg9IjQzIiBoZWlnaHQ9IjQzIiB2aWV3Qm94PSIwIDAgNDMgNDMiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxnIGNsaXAtcGF0aD0idXJsKCNjbGlwMF8zMzFfNDE5MykiPgo8cGF0aCBkPSJNMTcuODkyNyAxNi4zODYzTDI3Ljk3MjUgMjIuMzc4OUwxNS44MzcgMzEuNjMxNUwxNy44OTI3IDE2LjM4NjNaIiBmaWxsPSIjRENBNUZCIi8+CjxwYXRoIGQ9Ik0yMS41NCAxMi45MjRMMjkuMTU4MSAxNy41OTE1TDI4LjczNDggMjEuMzY0NkwxOC44MzUzIDE1LjMyN0wyMS41NCAxMi45MjRaIiBmaWxsPSIjRENBNUZCIi8+CjxwYXRoIGQ9Ik0xNy44NzUxIDE0LjYyOTZMMTMuMzM4NyA4LjQ2MjU4TDE4LjA0MzggNy45OTg1NkwyMC43MjQ0IDEyLjM0MTlMMTcuODc1MSAxNC42Mjk2WiIgZmlsbD0iI0VBQzZGRiIvPgo8cGF0aCBkPSJNMTIuNjA4OSA5LjY3ODA0TDE2LjgxNDIgMTUuNjc4M0wxNS43Mzc2IDMxLjQ0NzRMMTIuNjA4OSA5LjY3ODA0Wk0yOS4xODEyIDIzLjA3MjlMMzYuMjI3NiAyMy41MjMxTDE2LjAyMjEgMzEuNTI1NUwyOS4xODEyIDIzLjA3MjlaIiBmaWxsPSIjQjU3N0Q5Ii8+CjxwYXRoIGQ9Ik0yOS44MTIzIDIxLjc2NjJMMzAuMTcwMSAxNy43NEwzNC43ODIyIDE3Ljg5MzdMMzYuMjU2MSAyMi4xOTMxTDI5LjgxMjMgMjEuNzY2MloiIGZpbGw9IiNDQjkwRUQiLz4KPHBhdGggZD0iTTIyLjAxNzUgMTEuODY3M0wyMC45MTA3IDEwLjc0MjlMMTkuMjc3NSA3Ljg4Mzk0TDIyLjc5MjEgOC41ODMyNUwzMi4yMzc1IDE0LjI1NTRMMzQuMzg2OCAxNy4xNzQ5TDMwLjgzMDYgMTYuODUzM0wyOS43NjgxIDE2LjUyMThMMjIuMDE3NSAxMS44NjczWiIgZmlsbD0iI0RDQTVGQiIvPgo8L2c+CjxkZWZzPgo8Y2xpcFBhdGggaWQ9ImNsaXAwXzMzMV80MTkzIj4KPHJlY3Qgd2lkdGg9IjMxLjI4NjkiIGhlaWdodD0iMzEuMjg2OSIgZmlsbD0id2hpdGUiIHRyYW5zZm9ybT0idHJhbnNsYXRlKDE2LjEwNzQpIHJvdGF0ZSgzMC45ODU4KSIvPgo8L2NsaXBQYXRoPgo8L2RlZnM+Cjwvc3ZnPgo=" mode="aspectFit"></image>
+        </view>
+      </view>
+
+      <view class="top-actions-left" wx:if="{{isLoggedIn}}">
+        <view class="points-display" bindtap="goToCheckin">
+          <van-icon name="medal-o" size="48rpx" color="#ffae00" />
+          <text class="points-text">{{i18n.index.checkinToGetPoints}}</text>
+        </view>
+      </view>
+
+      <view class="btn-member-language" bindtap="onLanguageToggle">
+        <text class="btn-member-language-text">{{language === 'zh' ? 'En' : '中文'}}</text>
+      </view>
+    </view>
+
     <!-- 提示区域 -->
-    <view class="hint-section">
-      <view class="hint-title">{{i18n.index.title}}</view>
-      <view class="hint-subtitle">{{i18n.index.subtitle}}</view>
+    <view class="prompt-message">
+      <view class="prompt-message-hint-title">{{i18n.index.greetingTitle}}</view>
+      <view class="prompt-message-hint-subtitle">{{i18n.index.greetingSubtitle}}</view>
     </view>
 
     <!-- 输入区域 -->
-    <view class="input-section">
+    <!-- <view class="input-section">
       <view class="input-field glass-effect {{inputFocused ? 'focused' : ''}}">
         <textarea class="dream-input" placeholder="{{i18n.index.placeholder}}" value="{{dreamDescription}}" bindinput="onDreamInput" bindfocus="onInputFocus" bindblur="onInputBlur" maxlength="1000" show-confirm-bar="{{false}}"></textarea>
         <view class="input-actions" wx:if="{{dreamDescription}}">
@@ -47,11 +69,30 @@
       <view class="points-display-input-section" bindtap="goToCheckin">
         <text class="points-text-input-section">{{i18n.index.currentPoints}} {{totalPoints}}</text>
       </view>
+    </view> -->
+    <view class="input-section-v2">
+      <view class="input-field glass-effect {{inputFocused ? 'focused' : ''}}">
+        <textarea class="dream-input" placeholder="" value="{{dreamDescription}}" bindinput="onDreamInput" bindfocus="onInputFocus" bindblur="onInputBlur" maxlength="1000" show-confirm-bar="{{false}}"></textarea>
+        <!-- 自定义 placeholder -->
+        <view class="custom-placeholder" wx:if="{{!dreamDescription && !inputFocused}}">
+          <text class="placeholder-line">{{i18n.index.placeholderLine1}}</text>
+          <view class="placeholder-line-v2">空白符</view>
+          <text class="placeholder-line">{{i18n.index.placeholderLine2}}</text>
+          <text class="placeholder-line">{{i18n.index.placeholderLine3}}</text>
+        </view>
+        <view class="input-actions" wx:if="{{dreamDescription}}">
+          <view class="char-count">{{dreamDescription.length}}/1000</view>
+          <view class="clear-btn" bindtap="onClearInput">
+            <text class="clear-icon">×</text>
+          </view>
+        </view>
+      </view>
+
+      <image class="input-section-v2-ip-bg" src="https://dulele.org.cn/images/assest/index_v2_ip_t.png" mode="" />
     </view>
 
     <!-- 生成类型选择 -->
-    <view class="generation-type-section">
-      <view class="generation-type-title">{{i18n.index.generationType}}</view>
+    <!-- <view class="generation-type-section">
       <radio-group class="generation-type-group" bindchange="onGenerationTypeChange">
         <label class="generation-type-item {{generationType === 'image' ? 'active' : ''}}">
           <radio value="image" checked="{{generationType === 'image'}}" color="#8B5CF6" />
@@ -75,15 +116,42 @@
           </view>
         </label>
       </radio-group>
+    </view> -->
+    <view class="generation-type-section-v2">
+      <view class="generation-type-section-v2-top">
+        <view class="raw-photos {{generationType === 'image' ? 'active' : ''}}" bindtap="onSelectImage">
+          <image class="raw-photos-img" src="data:image/svg+xml;charset=utf-8;base64,PHN2ZyB3aWR0aD0iMzUiIGhlaWdodD0iMjgiIHZpZXdCb3g9IjAgMCAzNSAyOCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHBhdGggZD0iTTMzLjI2NDYgMEMzNC4yMDM0IDAuMDAwMTgwNzIyIDM1IDAuODQyMzI0IDM1IDEuODgwODZWMjYuMTE5MUMzNSAyNy4xNjE3IDM0LjIyMzEgMjcuOTk5OCAzMy4yNjQ2IDI4TDEuNzM1MzUgMjhDMC43OTY2MTMgMjcuOTk5OCAwIDI3LjE1NzcgMCAyNi4xMTkxTDAgMS44ODA4NkMwIDAuODM4MzE3IDAuNzc2OTE1IDAuMDAwMTc3MDc4IDEuNzM1MzUgMEwzMy4yNjQ2IDBaTTIuNjI1IDE3LjIzNjNMMTAuODQ4NiAxMC41ODU5QzExLjY1OCA5LjkzMTQ3IDEyLjk1OCA5Ljk2MzEzIDEzLjczODMgMTAuNjQ4NEwyMS41NzIzIDE3LjUzMjJMMjUuNTY2NCAxNC4xMzU3QzI2LjM3NTMgMTMuNDQ4MSAyNy42NjIxIDEzLjQ2MTUgMjguNDQ3MyAxNC4xNjZMMzIuMzc1IDE3LjczNzNWMi42MjVMMi42MjUgMi42MjVMMi42MjUgMTcuMjM2M1oiIGZpbGw9IndoaXRlIiBmaWxsLW9wYWNpdHk9IjAuOSIvPgo8L3N2Zz4K" mode="" />
+          <text>{{i18n.index.generateImage}}</text>
+
+          <view class="points-cost">
+            <text class="points-cost-text" wx:if="{{isVip && membershipInfo && membershipInfo.benefits && membershipInfo.benefits.text_to_image > 0}}">{{membershipInfo.benefits.text_to_image}}/{{membershipInfo.benefit_defaults.text_to_image}}{{i18n.index.times}}</text>
+            <text class="points-cost-text" wx:else>-{{pointsCost.image}}{{i18n.index.points}}</text>
+          </view>
+        </view>
+        <view class="raw-video {{generationType === 'video' ? 'active' : ''}}" bindtap="onSelectVideo">
+          <image class="raw-photos-img" src="data:image/svg+xml;charset=utf-8;base64,PHN2ZyB3aWR0aD0iMzIiIGhlaWdodD0iMjciIHZpZXdCb3g9IjAgMCAzMiAyNyIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHBhdGggZD0iTTQuOTU1MzYgMEMzLjY0MTExIDAgMi4zODA3IDAuNTIyMDgxIDEuNDUxMzkgMS40NTEzOUMwLjUyMjA4MSAyLjM4MDcgMCAzLjY0MTExIDAgNC45NTUzNlYyMS40NzMyQzAgMjIuNzg3NSAwLjUyMjA4MSAyNC4wNDc5IDEuNDUxMzkgMjQuOTc3MkMyLjM4MDcgMjUuOTA2NSAzLjY0MTExIDI2LjQyODYgNC45NTUzNiAyNi40Mjg2SDI2Ljc1MzZDMjguMDY3OSAyNi40Mjg2IDI5LjMyODMgMjUuOTA2NSAzMC4yNTc2IDI0Ljk3NzJDMzEuMTg2OSAyNC4wNDc5IDMxLjcwOSAyMi43ODc1IDMxLjcwOSAyMS40NzMyVjQuOTU1MzZDMzEuNzA5IDMuNjQxMTEgMzEuMTg2OSAyLjM4MDcgMzAuMjU3NiAxLjQ1MTM5QzI5LjMyODMgMC41MjIwODEgMjguMDY3OSAwIDI2Ljc1MzYgMEg0Ljk1NTM2Wk0xLjk4MjE0IDQuOTU1MzZDMS45ODIxNCA0LjE2NjgxIDIuMjk1MzkgMy40MTA1NiAyLjg1Mjk4IDIuODUyOThDMy40MTA1NiAyLjI5NTM5IDQuMTY2ODEgMS45ODIxNCA0Ljk1NTM2IDEuOTgyMTRIMjYuNzUzNkMyNy41NDIyIDEuOTgyMTQgMjguMjk4NCAyLjI5NTM5IDI4Ljg1NiAyLjg1Mjk4QzI5LjQxMzYgMy40MTA1NiAyOS43MjY5IDQuMTY2ODEgMjkuNzI2OSA0Ljk1NTM2VjIxLjQ3MzJDMjkuNzI2OSAyMi4yNjE4IDI5LjQxMzYgMjMuMDE4IDI4Ljg1NiAyMy41NzU2QzI4LjI5ODQgMjQuMTMzMiAyNy41NDIyIDI0LjQ0NjQgMjYuNzUzNiAyNC40NDY0SDQuOTU2NjhDNC4xNjgxMyAyNC40NDY0IDMuNDExODggMjQuMTMzMiAyLjg1NDMgMjMuNTc1NkMyLjI5NjcxIDIzLjAxOCAxLjk4MzQ2IDIyLjI2MTggMS45ODM0NiAyMS40NzMyTDEuOTgyMTQgNC45NTUzNlpNMTAuNTY2MSA4LjI2MDI1VjE4LjE3MUMxMC41NjYzIDE4LjM5OTMgMTAuNjI1NiAxOC42MjM2IDEwLjczODIgMTguODIyMkMxMC44NTA5IDE5LjAyMDggMTEuMDEzMSAxOS4xODY4IDExLjIwODkgMTkuMzA0QzExLjQwNDggMTkuNDIxMyAxMS42Mjc4IDE5LjQ4NTggMTEuODU2IDE5LjQ5MTJDMTIuMDg0MyAxOS40OTY3IDEyLjMxIDE5LjQ0MjkgMTIuNTExMyAxOS4zMzUxTDIxLjc2MTMgMTQuMzc5OEMyMS45NzE3IDE0LjI2NjggMjIuMTQ3NiAxNC4wOTg4IDIyLjI3MDIgMTMuODkzOUMyMi4zOTI4IDEzLjY4ODkgMjIuNDU3NSAxMy40NTQ1IDIyLjQ1NzUgMTMuMjE1NkMyMi40NTc1IDEyLjk3NjcgMjIuMzkyOCAxMi43NDI0IDIyLjI3MDIgMTIuNTM3NEMyMi4xNDc2IDEyLjMzMjQgMjEuOTcxNyAxMi4xNjQ0IDIxLjc2MTMgMTIuMDUxNEwxMi41MTEzIDcuMDk2MDdDMTIuMzEwMSA2Ljk4ODM2IDEyLjA4NDUgNi45MzQ1OSAxMS44NTYzIDYuOTM5OThDMTEuNjI4MiA2Ljk0NTM3IDExLjQwNTQgNy4wMDk3NSAxMS4yMDk1IDcuMTI2ODRDMTEuMDEzNyA3LjI0MzkzIDEwLjg1MTUgNy40MDk3NCAxMC43Mzg3IDcuNjA4MTRDMTAuNjI2IDcuODA2NTMgMTAuNTY2NSA4LjAzMDc0IDEwLjU2NjEgOC4yNTg5MyIgZmlsbD0id2hpdGUiLz4KPC9zdmc+Cg==" mode="" />
+          <text>{{i18n.index.generateVideo}}</text>
+
+          <view class="points-cost">
+            <text class="points-cost-text" wx:if="{{isVip && membershipInfo && membershipInfo.benefits && membershipInfo.benefits.text_to_video > 0}}">{{membershipInfo.benefits.text_to_video}}/{{membershipInfo.benefit_defaults.text_to_video}}{{i18n.index.times}}</text>
+            <text class="points-cost-text" wx:else>-{{pointsCost.video}}{{i18n.index.points}}</text>
+          </view>
+        </view>
+      </view>
+      <view class="generation-type-section-v2-bom" bindtap="onParseDream">
+        <text class="parse-button">{{i18n.index.dreamAnalysis}}</text>
+        <text class="vip-badge" wx:if="{{isVip}}">VIP</text>
+        <text class="discount-badge" wx:if="{{isVip}}">{{i18n.index.discount}}</text>
+      </view>
     </view>
 
     <!-- 分析按钮 -->
-    <view class="action-section">
+    <!-- <view class="action-section">
       <button class="analysis-button {{analyzing ? 'analyzing' : ''}}" bindtap="onAnalyzeDream" disabled="{{analyzing}}">
         <text wx:if="{{!analyzing}}">{{i18n.index.analyze}}</text>
         <text wx:else>{{i18n.index.analyzing}}</text>
-      </button>
-    </view>
+      </button> 
+    </view> -->
 
     <!-- 进度条 -->
     <view class="progress-section {{analyzing ? 'show' : ''}}">
@@ -93,14 +161,18 @@
       <view class="progress-text" wx:if="{{analyzing}}">{{progressText}}</view>
     </view>
 
+    <view class="usage-tips">
+      <text class="usage-tips-text">{{i18n.index.usageTips}}</text>
+    </view>
+
     <!-- 使用提示 -->
-    <view class="tips-section">
+    <!-- <view class="tips-section">
       <view class="tips-title">{{i18n.index.tipsTitle}}</view>
       <view class="tips-content">
         <view class="tip-item" wx:for="{{i18n.index.tips}}" wx:key="index">{{item}}</view>
       </view>
       <view class="tips-disclaimer">{{i18n.index.disclaimer}}</view>
-    </view>
+    </view> -->
   </view>
 
   <!-- 登录弹窗 -->

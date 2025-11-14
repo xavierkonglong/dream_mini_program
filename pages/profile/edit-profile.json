@@ -4,8 +4,11 @@
     "van-field": "@vant/weapp/field/index"
   },
   "navigationBarTitleText": "个人信息",
-  "navigationBarBackgroundColor": "#8B5CF6",
-  "navigationBarTextStyle": "white"
+  "navigationBarBackgroundColor": "#EDE3FC",
+  "navigationBarTextStyle": "black",
+  "backgroundTextStyle": "light",
+  "backgroundColorTop": "#EDE3FC",
+  "backgroundColorBottom": "#EDE3FC"
 }
 
 

@@ -1,6 +1,11 @@
 {
   "navigationBarTitleText": "梦境",
-  "enablePullDownRefresh": false,
+  "navigationBarBackgroundColor": "#EDE3FC",
+  "navigationBarTextStyle": "black",
+  "backgroundTextStyle": "light",
+  "backgroundColorTop": "#EDE3FC",
+  "backgroundColorBottom": "#EDE3FC",
+  "enablePullDownRefresh": true,
   "usingComponents": {
     "login-modal": "/components/login-modal/login-modal",
     "profile-setup-modal": "/components/profile-setup-modal/profile-setup-modal",
@@ -8,5 +13,3 @@
     "van-icon": "@vant/weapp/icon/index"
   }
 }
-
-

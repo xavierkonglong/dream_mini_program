@@ -1,7 +1,7 @@
 <!--pages/profile/profile-detail.wxml-->
 <view class="container language-{{language}}">
   <!-- 背景图片 -->
-  <image class="background-image" src="{{imageUrls.BACKGROUNDS.PERSON}}" mode="aspectFill"></image>
+  <image class="background-image" src="https://dulele.org.cn/images/assest/bg-v2-01.jpg" mode="aspectFill"></image>
   
   <!-- 用户信息头部 -->
   <view class="profile-header">

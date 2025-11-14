@@ -11,7 +11,7 @@
 }
 
 .background-image {
-   position: fixed;
+  position: fixed;
   top: 0;
   left: 0;
   width: 100%;
@@ -51,7 +51,8 @@
   transform: scale(0.95);
 }
 
-.icon-arrow, .icon-close {
+.icon-arrow,
+.icon-close {
   font-size: 32rpx;
   color: white;
   font-weight: bold;
@@ -82,6 +83,7 @@
 }
 
 .section-title {
+  margin-top: 10rpx;
   font-size: 32rpx;
   font-weight: 600;
   color: #000000;
@@ -102,13 +104,17 @@
 }
 
 .cloud-card::before {
-  content: '';
+  content: "";
   position: absolute;
   top: -20rpx;
   left: -20rpx;
   right: -20rpx;
   bottom: -20rpx;
-  background: linear-gradient(45deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.05));
+  background: linear-gradient(
+    45deg,
+    rgba(255, 255, 255, 0.1),
+    rgba(255, 255, 255, 0.05)
+  );
   border-radius: 50rpx;
   z-index: -1;
 }
@@ -122,7 +128,8 @@
   font-size: 28rpx;
   line-height: 1.6;
   color: #333;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC",
+    "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
 }
 
 /* 关键词标签 */
@@ -134,18 +141,18 @@
 
 .keyword-tag {
   background: rgba(255, 255, 255, 0.9);
-  border: 2rpx solid #8B5CF6;
+  border: 2rpx solid #8b5cf6;
   border-radius: 30rpx;
   padding: 16rpx 24rpx;
   font-size: 24rpx;
-  color: #8B5CF6;
+  color: #8b5cf6;
   font-weight: 500;
   backdrop-filter: blur(5rpx);
   transition: all 0.3s ease;
 }
 
 .keyword-tag:active {
-  background: #8B5CF6;
+  background: #8b5cf6;
   color: white;
   transform: scale(0.95);
 }
@@ -166,7 +173,8 @@
   font-size: 28rpx;
   line-height: 1.6;
   color: #333;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC",
+    "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
 }
 
 /* Markdown 内容样式（专业版） */
@@ -175,7 +183,8 @@
   font-size: 28rpx;
   line-height: 1.8;
   color: #333;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC",
+    "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
 }
 
 /* Markdown 标题样式 */
@@ -195,7 +204,7 @@
   color: #2d2d2d;
   margin: 28rpx 0 20rpx 0;
   padding-left: 16rpx;
-  border-left: 4rpx solid #8B5CF6;
+  border-left: 4rpx solid #8b5cf6;
   line-height: 1.4;
 }
 
@@ -219,7 +228,7 @@
 /* Markdown 加粗样式 */
 .markdown-bold {
   font-weight: 600;
-  color: #8B5CF6;
+  color: #8b5cf6;
   background: rgba(139, 92, 246, 0.08);
   padding: 2rpx 6rpx;
   border-radius: 4rpx;
@@ -267,12 +276,12 @@
   padding: 20rpx;
   background: rgba(139, 92, 246, 0.1);
   border-radius: 16rpx;
-  border-left: 4rpx solid #8B5CF6;
+  border-left: 4rpx solid #8b5cf6;
 }
 
 .intro-text {
   font-size: 26rpx;
-  color: #8B5CF6;
+  color: #8b5cf6;
   line-height: 1.5;
   font-weight: 500;
 }
@@ -299,7 +308,7 @@
 .question-number {
   font-size: 28rpx;
   font-weight: 600;
-  color: #8B5CF6;
+  color: #8b5cf6;
 }
 
 .question-icon {
@@ -335,7 +344,7 @@
 }
 
 .answer-textarea:focus {
-  border-color: #8B5CF6;
+  border-color: #8b5cf6;
   background: #fff;
   box-shadow: 0 0 0 4rpx rgba(139, 92, 246, 0.1);
 }
@@ -356,7 +365,7 @@
 .save-answers-btn {
   width: 100%;
   height: 80rpx;
-  background: linear-gradient(135deg, #8B5CF6 0%, #A855F7 100%);
+  background: linear-gradient(135deg, #8b5cf6 0%, #a855f7 100%);
   border-radius: 40rpx;
   border: none;
   display: flex;
@@ -372,13 +381,18 @@
 }
 
 .save-answers-btn::before {
-  content: '';
+  content: "";
   position: absolute;
   top: 0;
   left: -100%;
   width: 100%;
   height: 100%;
-  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.2),
+    transparent
+  );
   transition: left 0.5s;
 }
 
@@ -405,7 +419,7 @@
 .image-container {
   position: relative;
   width: 100%;
-  aspect-ratio: 1/1;  /* 正方形比例 */
+  aspect-ratio: 1/1; /* 正方形比例 */
   border-radius: 24rpx;
   overflow: hidden;
   box-shadow: 0 8rpx 24rpx rgba(0, 0, 0, 0.1);
@@ -506,9 +520,9 @@
   gap: 6rpx;
   padding: 12rpx 24rpx;
   background: rgba(255, 255, 255, 0.9);
-  border: 2rpx solid #8B5CF6;
+  border: 2rpx solid #8b5cf6;
   border-radius: 16rpx;
-  color: #8B5CF6;
+  color: #8b5cf6;
   font-size: 22rpx;
   font-weight: 500;
   box-shadow: 0 4rpx 16rpx rgba(139, 92, 246, 0.2);
@@ -580,15 +594,15 @@
 }
 
 .action-btn.small {
-  height: 72rpx;           /* 统一高度 */
-  min-width: 220rpx;       /* 统一最小宽度，视觉更一致 */
-  padding: 0 28rpx;        /* 仅左右内边距 */
+  height: 72rpx; /* 统一高度 */
+  min-width: 220rpx; /* 统一最小宽度，视觉更一致 */
+  padding: 0 28rpx; /* 仅左右内边距 */
   border-radius: 24rpx;
 }
 
 .publish-button {
   background: #ffffff;
-  border: 2rpx solid #8B5CF6;
+  border: 2rpx solid #8b5cf6;
   box-shadow: 0 6rpx 18rpx rgba(139, 92, 246, 0.12);
 }
 
@@ -599,14 +613,14 @@
 
 .publish-text {
   font-size: 28rpx;
-  color: #8B5CF6;
+  color: #8b5cf6;
   font-weight: 500;
 }
 
 /* 设置为仅个人可见按钮样式 */
 .private-button {
   background: #ffffff;
-  border: 2rpx solid #FF6B6B;
+  border: 2rpx solid #ff6b6b;
   box-shadow: 0 6rpx 18rpx rgba(255, 107, 107, 0.12);
 }
 
@@ -617,13 +631,13 @@
 
 .private-text {
   font-size: 28rpx;
-  color: #FF6B6B;
+  color: #ff6b6b;
   font-weight: 500;
 }
 
 /* 海报按钮样式 */
-.poster-button { 
-  background: linear-gradient(135deg, #FF9A9E, #FAD0C4);
+.poster-button {
+  background: linear-gradient(135deg, #ff9a9e, #fad0c4);
   box-shadow: 0 10rpx 28rpx rgba(255, 154, 158, 0.35);
 }
 .poster-text {
@@ -720,7 +734,7 @@
 
 .rating-text {
   font-size: 24rpx;
-  color: #8B5CF6;
+  color: #8b5cf6;
   font-weight: 600;
 }
 
@@ -751,7 +765,7 @@
 }
 
 .feedback-textarea:focus {
-  border-color: #8B5CF6;
+  border-color: #8b5cf6;
   background: #fff;
   box-shadow: 0 0 0 4rpx rgba(139, 92, 246, 0.1);
 }
@@ -767,7 +781,7 @@
 .feedback-submit-btn {
   width: 100%;
   height: 88rpx;
-  background: linear-gradient(135deg, #8B5CF6 0%, #A855F7 100%);
+  background: linear-gradient(135deg, #8b5cf6 0%, #a855f7 100%);
   border-radius: 44rpx;
   border: none;
   display: flex;
@@ -783,13 +797,18 @@
 }
 
 .feedback-submit-btn::before {
-  content: '';
+  content: "";
   position: absolute;
   top: 0;
   left: -100%;
   width: 100%;
   height: 100%;
-  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.2),
+    transparent
+  );
   transition: left 0.5s;
 }
 
@@ -833,14 +852,18 @@
   width: 60rpx;
   height: 60rpx;
   border: 4rpx solid rgba(255, 255, 255, 0.3);
-  border-top: 4rpx solid #8B5CF6;
+  border-top: 4rpx solid #8b5cf6;
   border-radius: 50%;
   animation: spin 1s linear infinite;
 }
 
 @keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
 }
 
 .loading-text {
@@ -862,7 +885,7 @@
   /* padding: 16rpx 24rpx !important; */
   font-size: 28rpx !important;
   font-weight: 600 !important;
-  color: #8B5CF6 !important;
+  color: #8b5cf6 !important;
   background: rgba(139, 92, 246, 0.05) !important;
   min-height: 60rpx !important;
 }
@@ -873,11 +896,11 @@
 }
 
 .question-collapse-item .van-collapse-item__title::after {
-  border-color: #8B5CF6 !important;
+  border-color: #8b5cf6 !important;
 }
 
 .question-collapse-item .van-collapse-item__title--expanded::after {
-  border-color: #8B5CF6 !important;
+  border-color: #8b5cf6 !important;
 }
 
 /* 感谢信息样式 */
@@ -898,7 +921,7 @@
 .thank-you-title {
   font-size: 32rpx;
   font-weight: 600;
-  color: #8B5CF6;
+  color: #8b5cf6;
   margin-bottom: 16rpx;
 }
 
@@ -910,7 +933,11 @@
 }
 
 @keyframes bounce {
-  0%, 20%, 50%, 80%, 100% {
+  0%,
+  20%,
+  50%,
+  80%,
+  100% {
     transform: translateY(0);
   }
   40% {

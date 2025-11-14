@@ -435,6 +435,8 @@ Page({
 
         // 专业版不需要轮询图片和视频
         if (isProfessional) {
+          // 确保 result 中有 postId（使用传入的参数或 API 返回的值）
+          result.postId = result.postId || postId;
           result.generationType = "professional";
           this.setData({
             isVideoType: false,
@@ -2236,13 +2238,22 @@ Page({
       return;
     }
 
-    // 检查是否有postId
-    if (!result || !result.postId) {
+    // 检查是否有postId或analysisId（专业版可能只有analysisId）
+    if (!result || (!result.postId && !result.analysisId)) {
       wx.showToast({
         title: "缺少必要参数",
         icon: "error",
       });
       return;
+    }
+
+    // 如果没有postId但有analysisId，尝试使用analysisId作为postId（专业版可能analysisId就是postId）
+    let postId = result.postId;
+    if (!postId && result.analysisId) {
+      // 专业版数据可能analysisId就是postId，或者需要通过analysisId获取postId
+      // 先尝试使用analysisId作为postId
+      postId = result.analysisId;
+      console.log("专业版数据缺少postId，使用analysisId作为postId:", postId);
     }
 
     this.setData({ submittingFeedback: true });
@@ -2251,7 +2262,7 @@ Page({
       const http = require("../../services/http.js");
       const requestData = {
         content: feedbackContent,
-        postId: result.postId, // 带上postId
+        postId: postId, // 使用获取到的postId
       };
 
       // 只有当评分大于0时才添加rating参数

@@ -33,12 +33,12 @@
   top: 0;
   left: 0;
   right: 0;
-  height: 100vh;
-  background-image: url("https://dulele.org.cn/images/assest/community.png");
+  bottom: 0;
+  background-image: url("https://dulele.org.cn/images/assest/index_v2_bg.jpg");
   background-size: cover;
   background-position: center;
   background-repeat: no-repeat;
-  z-index: 10;
+  background-attachment: fixed;
 }
 
 /* 页面标题 */
@@ -83,7 +83,8 @@
 }
 
 .filter-sticky .van-ellipsis {
-  color: rgb(238, 229, 229);
+  color: rgba(86, 75, 121, 1);
+  font-weight: bold;
 }
 
 /* 梦境列表 */
@@ -160,7 +161,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #8b5cf6;
+  color: rgba(86, 75, 121, 1);
   box-shadow: 0 4rpx 16rpx rgba(0, 0, 0, 0.2);
 }
 
@@ -174,7 +175,7 @@
   display: block;
   font-size: 28rpx;
   line-height: 1.6;
-  color: #000;
+  color: rgba(86, 75, 121, 1);
   word-break: break-all;
 }
 
@@ -232,7 +233,7 @@
 
 .create-time {
   font-size: 24rpx;
-  color: #000;
+  color: rgba(86, 75, 121, 1);
 }
 
 .action-buttons {
@@ -259,7 +260,7 @@
 .action-icon {
   font-size: 40rpx !important;
   margin-right: 8rpx;
-  color: #969799;
+  color: rgba(86, 75, 121, 1);
   transition: all 0.3s ease;
 }
 
@@ -273,7 +274,7 @@
 
 .action-text {
   font-size: 24rpx;
-  color: #969799;
+  color: rgba(86, 75, 121, 1);
   font-weight: 500;
   transition: all 0.3s ease;
 }
@@ -290,7 +291,7 @@
 .loading {
   text-align: center;
   padding: 40rpx;
-  color: rgba(255, 255, 255, 0.9);
+  color: rgba(86, 75, 121, 1);
   font-size: 28rpx;
   position: relative;
   z-index: 10;
@@ -301,7 +302,7 @@
 .load-more {
   text-align: center;
   padding: 30rpx;
-  color: rgba(255, 255, 255, 0.8);
+  color: rgba(86, 75, 121, 1);
   font-size: 26rpx;
   position: relative;
   z-index: 10;
@@ -312,7 +313,7 @@
 .no-more {
   text-align: center;
   padding: 30rpx;
-  color: rgba(255, 255, 255, 0.6);
+  color: rgba(86, 75, 121, 1);
   font-size: 24rpx;
   position: relative;
   z-index: 10;
@@ -323,7 +324,7 @@
 .empty-state {
   text-align: center;
   padding: 100rpx 40rpx;
-  color: rgba(255, 255, 255, 0.9);
+  color: rgba(86, 75, 121, 1);
   position: relative;
   z-index: 10;
 }

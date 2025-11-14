@@ -1,5 +1,10 @@
 {
   "navigationBarTitleText": "解析结果",
+  "navigationBarBackgroundColor": "#EDE3FC",
+  "navigationBarTextStyle": "black",
+  "backgroundTextStyle": "light",
+  "backgroundColorTop": "#EDE3FC",
+  "backgroundColorBottom": "#EDE3FC",
   "enablePullDownRefresh": false,
   "usingComponents": {
     "profile-setup-modal": "/components/profile-setup-modal/profile-setup-modal",

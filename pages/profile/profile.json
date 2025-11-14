@@ -4,9 +4,15 @@
     "profile-setup-modal": "../../components/profile-setup-modal/profile-setup-modal",
     "custom-tabbar": "../../components/custom-tabbar/custom-tabbar",
     "van-icon": "@vant/weapp/icon/index",
-    "van-loading": "@vant/weapp/loading/index"
+    "van-loading": "@vant/weapp/loading/index",
+    "van-button": "@vant/weapp/button/index"
   },
   "navigationBarTitleText": "我的",
+  "navigationBarBackgroundColor": "#EDE3FC",
+  "navigationBarTextStyle": "black",
+  "backgroundTextStyle": "light",
+  "backgroundColorTop": "#EDE3FC",
+  "backgroundColorBottom": "#EDE3FC",
   "enablePullDownRefresh": true,
   "onReachBottomDistance": 100
 }

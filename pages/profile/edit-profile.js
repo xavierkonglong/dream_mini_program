@@ -25,7 +25,25 @@ Page({
     pageReady: false,
     isPageActive: true,
     language: "zh",
-    i18n: {},
+    i18n: {
+      editProfile: {
+        title: "",
+        nickname: "",
+        nicknamePlaceholder: "",
+        phone: "",
+        phonePlaceholder: "",
+        save: "",
+        saving: "",
+        cancel: "",
+        saveSuccess: "",
+        saveError: "",
+        nicknameRequired: "",
+        phoneRequired: "",
+        phoneInvalid: "",
+        uploading: "",
+        clickToChange: "",
+      },
+    },
   },
 
   /**
@@ -69,10 +87,8 @@ Page({
     // 监听语言切换事件
     wx.eventBus &&
       wx.eventBus.on("languageChanged", () => {
-        // 重新设置页面标题
-        wx.setNavigationBarTitle({
-          title: t("pageTitle.editProfile"),
-        });
+        // 重新初始化多语言
+        this.initI18n();
       });
   },
 
@@ -81,9 +97,15 @@ Page({
    */
   async onLoad(options) {
     console.log("个人信息编辑页面加载");
-    this.initI18n();
-    await this.loadUserInfo();
-    this.setData({ pageReady: true });
+    try {
+      this.initI18n();
+      await this.loadUserInfo();
+      this.setData({ pageReady: true });
+    } catch (error) {
+      console.error("页面加载失败:", error);
+      // 即使出错也设置页面就绪，避免白屏
+      this.setData({ pageReady: true });
+    }
   },
 
   /**
@@ -225,9 +247,10 @@ Page({
 
       console.log("使用本地用户信息:", userData);
 
-      // 显示错误提示
+      // 显示错误提示（确保 i18n 已初始化）
+      const errorMsg = this.data.i18n?.editProfile?.getUserInfoFailed || "获取用户信息失败，使用本地数据";
       wx.showToast({
-        title: this.data.i18n.editProfile.getUserInfoFailed,
+        title: errorMsg,
         icon: "none",
         duration: 2000,
       });

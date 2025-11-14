@@ -5,6 +5,7 @@ Component({
   data: {
     selected: 0,
     language: 'zh',
+    switching: false, // 是否正在切换中
     list: [
       {
         pagePath: 'pages/index/index',
@@ -141,23 +142,65 @@ Component({
     switchTab(e) {
       const { index, path } = e.currentTarget.dataset;
       
+      // 防抖处理：如果正在切换中，直接返回
+      if (this.data.switching) {
+        return;
+      }
+      
+      // 检查是否已经在目标页面
+      const pages = getCurrentPages();
+      if (pages.length > 0) {
+        const currentPage = pages[pages.length - 1];
+        const currentPath = currentPage.route;
+        if (currentPath === path) {
+          // 已经在目标页面，不需要跳转
+          return;
+        }
+      }
+      
       // 执行跳转 - 确保路径以 / 开头
       const targetPath = path.startsWith('/') ? path : '/' + path;
+      
+      // 设置切换状态
+      this.setData({
+        switching: true
+      });
       
       wx.switchTab({
         url: targetPath,
         success: () => {
           // 跳转成功后立即更新状态
           this.setData({
-            selected: index
+            selected: index,
+            switching: false
           });
           // 重新初始化i18n以确保语言同步
           this.initI18n();
         },
         fail: (error) => {
           console.error('跳转失败:', error);
+          // 跳转失败时重置状态
+          this.setData({
+            switching: false
+          });
+          
+          // 如果是超时错误，提示用户
+          if (error.errMsg && error.errMsg.includes('timeout')) {
+            console.warn('switchTab 超时，可能是页面加载过慢或网络问题');
+            // 不显示错误提示，避免打扰用户，静默处理
+            // 用户可以通过再次点击来重试
+          }
         }
       });
+      
+      // 设置超时保护，3秒后自动重置状态
+      setTimeout(() => {
+        if (this.data.switching) {
+          this.setData({
+            switching: false
+          });
+        }
+      }, 3000);
     }
   }
 });

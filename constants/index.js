@@ -162,7 +162,7 @@ const IMAGE_URLS = {
   
   // 背景图片
   BACKGROUNDS: {
-    INDEX: 'https://dulele.org.cn/images/assest/index.png',
+    INDEX: 'https://dulele.org.cn/images/assest/index_v2_bg.png',
     COMMUNITY: 'https://dulele.org.cn/images/assest/community.png',
     PERSON: 'https://dulele.org.cn/images/assest/person.png',
     PROFILE: 'https://dulele.org.cn/images/assest/profile.png',

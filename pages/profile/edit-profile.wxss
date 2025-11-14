@@ -43,13 +43,13 @@
 
 .back-icon {
   font-size: 32rpx;
-  color: white;
+  color: rgba(81, 56, 106, 1);
   font-weight: bold;
 }
 
 .header-title {
   font-size: 36rpx;
-  color: white;
+  color: rgba(81, 56, 106, 1);
   font-weight: 600;
   text-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.3);
 }
@@ -124,13 +124,13 @@
 
 .avatar-icon {
   font-size: 40rpx;
-  color: white;
+  color: rgba(81, 56, 106, 1);
   margin-bottom: 8rpx;
 }
 
 .avatar-text {
   font-size: 24rpx;
-  color: white;
+  color: rgba(81, 56, 106, 1);
   font-weight: 500;
 }
 
@@ -163,9 +163,8 @@
   top: 20rpx;
   left: 30rpx;
   font-size: 24rpx;
-  color: #8B5CF6;
+  color: rgba(81, 56, 106, 1);
   font-weight: 600;
-  background: rgba(255, 255, 255, 0.9);
   padding: 4rpx 12rpx;
   border-radius: 12rpx;
 }
@@ -176,14 +175,14 @@
   background: transparent;
   border: none;
   outline: none;
-  color: #333;
+  color: rgba(81, 56, 106, 1);
   font-size: 28rpx;
   padding-top: 20rpx;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
 }
 
 .input-field::placeholder {
-  color: #999;
+  color: rgba(81, 56, 106, 1);
 }
 
 .input-icon {

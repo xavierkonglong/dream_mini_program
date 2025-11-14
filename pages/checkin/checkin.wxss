@@ -7,10 +7,11 @@ page {
 .checkin-container {
   min-height: 100vh;
   height: 100vh;
-  background-image: url(https://dulele.org.cn/images/assest/index.png);
+  background-image: url(https://dulele.org.cn/images/assest/index_v2_bg_16.jpg);
   background-size: cover;
   background-position: center;
   background-repeat: no-repeat;
+  overflow: auto;
 }
 
 .rules-hint {
@@ -176,13 +177,13 @@ page {
 
 .points-label {
   font-size: 24rpx;
-  color: #999999;
+  color: rgba(159, 145, 207, 1);
 }
 
 .points-value {
   font-size: 32rpx;
   font-weight: 600;
-  color: #333333;
+  color: rgba(159, 145, 207, 1);
 }
 
 /* 任务列表 */
@@ -261,12 +262,12 @@ page {
 .task-title {
   font-size: 32rpx;
   font-weight: 600;
-  color: #333333;
+  color: rgba(131, 100, 238, 1);
 }
 
 .task-desc {
   font-size: 24rpx;
-  color: #999999;
+  color: rgba(159, 145, 207, 1)
 }
 
 .task-points {

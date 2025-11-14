@@ -1609,7 +1609,7 @@ Page({
 
       // 尝试下载背景图片到本地
       let backgroundImageUrl =
-        "https://dulele.org.cn/images/assest/dreamAnalysisResult.png";
+        "https://dulele.org.cn/images/assest/bg-v2-02.jpg ";
       try {
         const downloadResult = await wx.downloadFile({
           url: backgroundImageUrl,
@@ -2105,7 +2105,7 @@ Page({
           y: 0,
           width: 750,
           height: 1334,
-          url: "https://dulele.org.cn/images/assest/dreamAnalysisResult.png",
+          url: "https://dulele.org.cn/images/assest/bg-v2-02.jpg",
           zIndex: 0,
         });
 

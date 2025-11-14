@@ -3,10 +3,11 @@
     "van-icon": "@vant/weapp/icon/index"
   },
   "navigationBarTitleText": "积分任务",
-  "navigationBarBackgroundColor": "#8B5CF6",
-  "navigationBarTextStyle": "white",
-  "backgroundColor": "#8B5CF6",
+  "navigationBarBackgroundColor": "#EDE3FC",
+  "navigationBarTextStyle": "black",
   "backgroundTextStyle": "light",
+  "backgroundColorTop": "#EDE3FC",
+  "backgroundColorBottom": "#EDE3FC",
   "enablePullDownRefresh": false
 }
 

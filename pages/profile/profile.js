@@ -2,6 +2,7 @@
 const authService = require("../../services/auth.js");
 const userService = require("../../services/user.js");
 const http = require("../../services/http.js");
+const membershipService = require("../../services/membership.js");
 const { IMAGE_URLS } = require("../../constants/index.js");
 const { t, getLang, setLanguage } = require("../../utils/i18n.js");
 
@@ -44,6 +45,10 @@ Page({
     },
     // 缓存有效期（毫秒），5分钟
     cacheExpireTime: 5 * 60 * 1000,
+    // 会员信息
+    membershipInfo: null,
+    isVip: false,
+    showMembershipModal: false,
   },
 
   /**
@@ -105,6 +110,21 @@ Page({
           loadMoreFailed: t("profile.loadMoreFailed"),
           postIdNotFound: t("profile.postIdNotFound"),
           professionalAnalysis: t("profile.professionalAnalysis"),
+          openMembership: t("profile.openMembership"),
+          vip: t("profile.vip"),
+          membershipInfoTitle: t("profile.membershipInfoTitle"),
+          membershipStatus: t("profile.membershipStatus"),
+          membershipStatusActive: t("profile.membershipStatusActive"),
+          membershipStatusFrozen: t("profile.membershipStatusFrozen"),
+          membershipStatusExpired: t("profile.membershipStatusExpired"),
+          expiresAt: t("profile.expiresAt"),
+          membershipBenefits: t("profile.membershipBenefits"),
+          textToImageBenefit: t("profile.textToImageBenefit"),
+          textToVideoBenefit: t("profile.textToVideoBenefit"),
+          proAnalysisBenefit: t("profile.proAnalysisBenefit"),
+          times: t("profile.times"),
+          membershipInfoLoading: t("profile.membershipInfoLoading"),
+          gotIt: t("profile.gotIt"),
         },
         app: {
           shareTitle: t("app.shareTitle"),
@@ -163,6 +183,8 @@ Page({
     if (this.data.isLoggedIn) {
       // 检查是否需要重新加载数据（缓存机制）
       this.loadCurrentTabDataIfNeeded();
+      // 加载会员信息
+      this.loadMembershipInfo();
     }
   },
 
@@ -340,6 +362,9 @@ Page({
 
     // 登录成功后强制刷新数据
     this.loadCurrentTabData(true);
+
+    // 加载会员信息
+    this.loadMembershipInfo();
 
     // 关闭弹窗
     this.setData({
@@ -1133,6 +1158,170 @@ Page({
     wx.navigateTo({
       url: "/pages/profile/profile-detail",
     });
+  },
+
+  /**
+   * 加载会员信息
+   */
+  async loadMembershipInfo() {
+    if (!this.data.isLoggedIn) {
+      return;
+    }
+    
+    try {
+      const membershipInfo = await membershipService.getMembershipInfo();
+      this.setData({
+        membershipInfo: membershipInfo,
+        isVip: membershipInfo.is_vip || membershipInfo.active || false,
+      });
+      console.log('会员信息加载成功:', membershipInfo);
+    } catch (error) {
+      console.error('加载会员信息失败:', error);
+      // 失败时设置为非会员
+      this.setData({
+        membershipInfo: null,
+        isVip: false,
+      });
+    }
+  },
+
+  /**
+   * 显示会员信息
+   */
+  showMembershipInfo() {
+    const { membershipInfo, i18n } = this.data;
+    if (!membershipInfo) {
+      wx.showToast({
+        title: i18n.profile.membershipInfoLoading || '会员信息加载中...',
+        icon: 'none'
+      });
+      return;
+    }
+
+    const { benefits, benefit_defaults, expires_at_display, active, frozen } = membershipInfo;
+    
+    let statusText = active && !frozen 
+      ? i18n.profile.membershipStatusActive 
+      : frozen 
+        ? i18n.profile.membershipStatusFrozen 
+        : i18n.profile.membershipStatusExpired;
+    
+    let content = `${i18n.profile.membershipStatus}：${statusText}\n`;
+    if (expires_at_display) {
+      content += `${i18n.profile.expiresAt}：${expires_at_display}\n`;
+    }
+    content += `\n${i18n.profile.membershipBenefits}：\n`;
+    content += `• ${i18n.profile.textToImageBenefit}：${benefits?.text_to_image || 0}/${benefit_defaults?.text_to_image || 0}${i18n.profile.times}\n`;
+    content += `• ${i18n.profile.textToVideoBenefit}：${benefits?.text_to_video || 0}/${benefit_defaults?.text_to_video || 0}${i18n.profile.times}\n`;
+    content += `• ${i18n.profile.proAnalysisBenefit}：${benefits?.pro_analysis || 0}/${benefit_defaults?.pro_analysis || 0}${i18n.profile.times}`;
+
+    wx.showModal({
+      title: i18n.profile.membershipInfoTitle || 'VIP会员信息',
+      content: content,
+      showCancel: false,
+      confirmText: i18n.profile.gotIt || '知道了'
+    });
+  },
+
+  /**
+   * 开通会员
+   */
+  async onOpenMembership() {
+    if (!this.data.isLoggedIn) {
+      this.onLogin();
+      return;
+    }
+
+    // 如果已经是会员，显示会员信息
+    if (this.data.isVip) {
+      this.showMembershipInfo();
+      return;
+    }
+
+    try {
+      // 1. 创建预订单（获取支付参数）
+      // 后端会在 /api/v1/membership/prepay 接口中返回支付参数
+      const prepayData = await membershipService.createPrepay();
+      
+      if (!prepayData || !prepayData.payment_id) {
+        wx.showToast({
+          title: '创建订单失败',
+          icon: 'error'
+        });
+        return;
+      }
+
+      // 2. 检查并提取微信支付参数
+      // 微信小程序支付需要以下参数（后端已返回）：
+      // - timeStamp: 时间戳（字符串）
+      // - nonceStr: 随机字符串
+      // - package: 统一下单接口返回的 prepay_id，格式为 "prepay_id=xxx"
+      // - signType: 签名类型（RSA）
+      // - paySign: 签名
+      if (!prepayData.timeStamp || !prepayData.nonceStr || !prepayData.package || !prepayData.paySign) {
+        console.error('预订单接口未返回完整的微信支付参数，返回的数据:', prepayData);
+        wx.showModal({
+          title: '支付参数缺失',
+          content: '后端预订单接口未返回完整的微信支付参数，请联系后端开发人员检查接口实现。',
+          showCancel: false,
+          confirmText: '知道了'
+        });
+        return;
+      }
+
+      // 3. 调起微信支付
+      wx.requestPayment({
+        timeStamp: String(prepayData.timeStamp), // 确保是字符串
+        nonceStr: prepayData.nonceStr,
+        package: prepayData.package,
+        signType: prepayData.signType || 'RSA',
+        paySign: prepayData.paySign,
+        success: (res) => {
+          console.log('支付成功', res);
+          // 支付成功，等待后端处理回调后刷新会员信息
+          // 等待 2 秒让后端处理微信支付回调
+          setTimeout(async () => {
+            try {
+              // 刷新会员信息
+              await this.loadMembershipInfo();
+              wx.showToast({
+                title: '开通成功',
+                icon: 'success',
+                duration: 2000
+              });
+            } catch (error) {
+              console.error('获取会员信息失败:', error);
+              wx.showToast({
+                title: '开通成功，但获取会员信息失败',
+                icon: 'none',
+                duration: 2000
+              });
+            }
+          }, 2000);
+        },
+        fail: (err) => {
+          console.log('支付失败', err);
+          // 处理支付失败
+          if (err.errMsg === 'requestPayment:fail cancel') {
+            // 用户取消支付，不显示错误提示
+          } else {
+            // 支付失败，显示错误提示
+            wx.showToast({
+              title: '支付失败：' + (err.errMsg || '未知错误'),
+              icon: 'error',
+              duration: 3000
+            });
+          }
+        }
+      });
+
+    } catch (error) {
+      console.error('开通会员失败:', error);
+      wx.showToast({
+        title: error.message || '开通会员失败',
+        icon: 'error'
+      });
+    }
   },
 
   /**

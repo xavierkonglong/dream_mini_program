@@ -3,6 +3,7 @@ const { IMAGE_URLS } = require("../../constants/index.js");
 const authService = require("../../services/auth.js");
 const storage = require("../../utils/storage.js");
 const { t, getLang, setLanguage } = require("../../utils/i18n.js");
+const membershipService = require("../../services/membership.js");
 
 Page({
   data: {
@@ -11,7 +12,7 @@ Page({
     analyzing: false,
     inputFocused: false,
     progress: 0,
-    progressText: "0%",
+    progressText: "0%", 
     imageUrls: IMAGE_URLS,
     showLoginModal: false,
     showProfileSetupModal: false,
@@ -38,6 +39,9 @@ Page({
     },
     isNewVersion: true, // 是否为新版本，用于控制文生视频按钮显示
     isLoggedIn: false, // 登录状态
+    // 会员信息
+    membershipInfo: null,
+    isVip: false,
   },
 
   onLoad() {
@@ -48,6 +52,10 @@ Page({
     this.loadMemberStatus();
     // 首页初始化接口调用
     this.loadHomePageData();
+    // 加载会员信息
+    if (this.data.isLoggedIn) {
+      this.loadMembershipInfo();
+    }
   },
 
   // 初始化国际化
@@ -75,6 +83,17 @@ Page({
           points: t("index.points"),
           forbiddenContent: t("index.forbiddenContent"),
           insufficientPoints: t("index.insufficientPoints"),
+          greetingTitle: t("index.greetingTitle"),
+          greetingSubtitle: t("index.greetingSubtitle"),
+          placeholderLine1: t("index.placeholderLine1"),
+          placeholderLine2: t("index.placeholderLine2"),
+          placeholderLine3: t("index.placeholderLine3"),
+          generateImage: t("index.generateImage"),
+          generateVideo: t("index.generateVideo"),
+          dreamAnalysis: t("index.dreamAnalysis"),
+          usageTips: t("index.usageTips"),
+          times: t("index.times"),
+          discount: t("index.discount"),
         },
         app: {
           shareTitle: t("app.shareTitle"),
@@ -107,6 +126,29 @@ Page({
     // 刷新积分和会员状态
     this.loadUserPoints();
     this.loadMemberStatus();
+    // 加载会员信息
+    if (this.data.isLoggedIn) {
+      this.loadMembershipInfo();
+    }
+  },
+
+  // 下拉刷新
+  async onPullDownRefresh() {
+    try {
+      // 刷新会员状态（同步方法）
+      this.loadMemberStatus();
+      // 刷新积分和首页数据（异步方法）
+      await Promise.all([
+        this.loadUserPoints(),
+        this.loadHomePageData(),
+        this.loadMembershipInfo()
+      ]);
+    } catch (error) {
+      console.error('下拉刷新失败:', error);
+    } finally {
+      // 停止下拉刷新动画
+      wx.stopPullDownRefresh();
+    }
   },
 
   // 检查全局解析状态
@@ -157,6 +199,26 @@ Page({
     this.setData({
       generationType: e.detail.value,
     });
+  },
+
+  // 选择文生图
+  onSelectImage() {
+    this.setData({
+      generationType: 'image',
+    });
+  },
+
+  // 选择文生视频
+  onSelectVideo() {
+    this.setData({
+      generationType: 'video',
+    });
+  },
+
+  // 点击梦境解析按钮（根据当前类型触发解析）
+  onParseDream() {
+    // 直接调用解析方法，会根据当前的 generationType 调用对应接口
+    this.onAnalyzeDream();
   },
 
   // 开始解析梦境
@@ -360,6 +422,9 @@ Page({
         // 使用全局通知机制
         app.notifyAnalysisComplete(resultData);
 
+        // 刷新会员信息（更新剩余次数）
+        this.loadMembershipInfo();
+
         // 等待进度条完成后再跳转
         setTimeout(() => {
           // 清除全局状态
@@ -493,9 +558,12 @@ Page({
   },
 
   // 登录成功回调
-  onLoginSuccess(e) {
+  async onLoginSuccess(e) {
     // 更新登录状态
     this.checkLoginStatus();
+
+    // 加载会员信息
+    await this.loadMembershipInfo();
 
     // 检查是否是首次登录
     if (e.detail.isFirstLogin === true) {
@@ -712,6 +780,31 @@ Page({
     this.setData({
       isMember: isMember,
     });
+  },
+
+  /**
+   * 加载会员信息
+   */
+  async loadMembershipInfo() {
+    if (!this.data.isLoggedIn) {
+      return;
+    }
+    
+    try {
+      const membershipInfo = await membershipService.getMembershipInfo();
+      this.setData({
+        membershipInfo: membershipInfo,
+        isVip: membershipInfo.is_vip || membershipInfo.active || false,
+      });
+      console.log('首页会员信息加载成功:', membershipInfo);
+    } catch (error) {
+      console.error('加载会员信息失败:', error);
+      // 失败时设置为非会员
+      this.setData({
+        membershipInfo: null,
+        isVip: false,
+      });
+    }
   },
 
   /**

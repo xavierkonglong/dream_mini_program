@@ -3,8 +3,11 @@
     "login-modal": "/components/login-modal/login-modal"
   },
   "navigationBarTitleText": "帖子详情",
-  "navigationBarBackgroundColor": "#8B5CF6",
-  "navigationBarTextStyle": "white",
+  "navigationBarBackgroundColor": "#EDE3FC",
+  "navigationBarTextStyle": "black",
+  "backgroundTextStyle": "light",
+  "backgroundColorTop": "#EDE3FC",
+  "backgroundColorBottom": "#EDE3FC",
   "enablePullDownRefresh": false
 }
 
