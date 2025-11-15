@@ -1,0 +1,17 @@
+{
+  // 关闭保存时自动格式化
+  "editor.formatOnSave": false,
+  
+  // 关闭粘贴时自动格式化
+  "editor.formatOnPaste": false,
+  
+  // 关闭输入时自动格式化
+  "editor.formatOnType": false,
+  
+  // 关闭代码操作（如自动修复）
+  "editor.codeActionsOnSave": {
+    "source.fixAll": false,
+    "source.organizeImports": false
+  }
+}
+

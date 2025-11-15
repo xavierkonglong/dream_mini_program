@@ -1445,6 +1445,102 @@ Page({
       return;
     }
 
+    // 生成前先检查相册权限（兼容 Android 和 iOS）
+    try {
+      const settingRes = await new Promise((resolve) => {
+        wx.getSetting({
+          success: resolve,
+          fail: () => resolve({ authSetting: {} })
+        });
+      });
+
+      const photoAlbumAuth = settingRes.authSetting && settingRes.authSetting["scope.writePhotosAlbum"];
+
+      // 如果用户之前拒绝了权限，先提示
+      if (photoAlbumAuth === false) {
+        wx.showModal({
+          title: this.data.i18n.result.needAuthForImage,
+          content: this.data.i18n.result.allowSaveImage,
+          confirmText: this.data.i18n.result.goToSettings,
+          cancelText: this.data.i18n.result.cancel,
+          success: (modalRes) => {
+            if (modalRes.confirm) {
+              // 打开设置页面（Android 和 iOS 都支持）
+              wx.openSetting({
+                success: (settingRes) => {
+                  // 兼容 Android 和 iOS：检查权限是否已授权
+                  const newAuth = settingRes.authSetting && settingRes.authSetting["scope.writePhotosAlbum"];
+                  if (newAuth === true) {
+                    // 权限已授权，继续生成海报
+                    this.startGeneratePoster();
+                  }
+                  // 如果用户没有授权，不执行任何操作（用户已看到提示）
+                },
+                fail: () => {
+                  // 打开设置失败，不影响流程
+                  console.warn("打开设置页面失败");
+                }
+              });
+            }
+          },
+        });
+        return;
+      }
+
+      // 如果权限未确定，先请求权限（Android 和 iOS 都会弹出系统权限提示）
+      if (photoAlbumAuth === undefined) {
+        const authRes = await new Promise((resolve) => {
+          wx.authorize({
+            scope: "scope.writePhotosAlbum",
+            success: () => resolve({ success: true }),
+            fail: (err) => {
+              // Android 和 iOS 拒绝权限都会走 fail
+              console.log("权限请求失败:", err);
+              resolve({ success: false, err });
+            }
+          });
+        });
+
+        if (!authRes.success) {
+          // 用户拒绝了权限，提示去设置（兼容 Android 和 iOS）
+          wx.showModal({
+            title: this.data.i18n.result.needAuthForImage,
+            content: this.data.i18n.result.allowSaveImage,
+            confirmText: this.data.i18n.result.goToSettings,
+            cancelText: this.data.i18n.result.cancel,
+            success: (modalRes) => {
+              if (modalRes.confirm) {
+                wx.openSetting({
+                  success: (settingRes) => {
+                    // 兼容 Android 和 iOS：检查权限是否已授权
+                    const newAuth = settingRes.authSetting && settingRes.authSetting["scope.writePhotosAlbum"];
+                    if (newAuth === true) {
+                      // 权限已授权，继续生成海报
+                      this.startGeneratePoster();
+                    }
+                  },
+                  fail: () => {
+                    console.warn("打开设置页面失败");
+                  }
+                });
+              }
+            },
+          });
+          return;
+        }
+      }
+
+      // 权限已授权（true）或未检查（undefined 但 authorize 成功），开始生成海报
+      this.startGeneratePoster();
+    } catch (error) {
+      console.error("权限检查失败:", error);
+      // 即使权限检查失败，也尝试生成海报（保存时再处理权限问题，兼容双平台）
+      this.startGeneratePoster();
+    }
+  },
+
+  // 开始生成海报（内部方法）
+  async startGeneratePoster() {
     // 生成前先清理旧临时文件，避免空间不足
     try {
       this.cleanupUserDataDirSafe && this.cleanupUserDataDirSafe();
@@ -1474,61 +1570,47 @@ Page({
 
     try {
       // 如果图片存在，确保转换为本地路径（Painter 组件需要本地路径）
-      // 注意：在 iPhone 上，wxfile:// 格式的路径可能不被 Painter 识别，需要重新转换
+      // Android 和 iOS 对路径处理不同，需要统一转换
       let localImageUrl = null;
       if (result && result.imageUrl) {
-        // 检查是否是远程 URL
-        const isRemoteUrl = typeof result.imageUrl === 'string' && (result.imageUrl.startsWith('http://') || result.imageUrl.startsWith('https://'));
-        // 检查是否是 wxfile:// 格式（需要重新转换）
-        const isWxfilePath = typeof result.imageUrl === 'string' && result.imageUrl.startsWith('wxfile://');
-        
-        if (isRemoteUrl) {
-          // 远程 URL，需要转换为本地路径
-          try {
-            localImageUrl = await this.ensureLocalImage(result.imageUrl);
-            if (localImageUrl) {
-              result.imageUrl = localImageUrl;
-              this.setData({ "result.imageUrl": localImageUrl });
+        // 统一使用 getImageInfo 方法获取可用路径，兼容 Android 和 iOS
+        try {
+          const imageInfo = await new Promise((resolve, reject) => {
+            wx.getImageInfo({
+              src: result.imageUrl,
+              success: resolve,
+              fail: reject
+            });
+          });
+          
+          // Android 和 iOS 都返回 path 字段，这是最可靠的本地路径
+          if (imageInfo && imageInfo.path) {
+            localImageUrl = imageInfo.path;
+            console.log("图片路径转换成功:", localImageUrl);
+          } else {
+            // 降级方案：如果是远程 URL，尝试下载
+            const isRemoteUrl = typeof result.imageUrl === 'string' && 
+              (result.imageUrl.startsWith('http://') || result.imageUrl.startsWith('https://'));
+            if (isRemoteUrl) {
+              localImageUrl = await this.ensureLocalImage(result.imageUrl);
             } else {
-              console.warn("图片路径转换失败，使用原始 URL");
               localImageUrl = result.imageUrl;
             }
-          } catch (error) {
-            console.error("图片路径转换异常:", error);
-            localImageUrl = result.imageUrl;
           }
-        } else if (isWxfilePath) {
-          // wxfile:// 格式路径，在 iPhone 上可能不被识别，需要转换为临时文件路径
-          try {
-            // 先尝试读取文件，然后重新保存为临时文件
-            const fs = wx.getFileSystemManager();
-            const tempPath = `${wx.env.USER_DATA_PATH}/poster_img_${Date.now()}.png`;
-            
-            // 读取原文件
-            const fileData = await new Promise((resolve, reject) => {
-              fs.readFile({
-                filePath: result.imageUrl,
-                success: resolve,
-                fail: reject
-              });
-            });
-            
-            // 写入临时文件
-            await new Promise((resolve, reject) => {
-              fs.writeFile({
-                filePath: tempPath,
-                data: fileData.data,
-                encoding: "binary",
-                success: resolve,
-                fail: reject
-              });
-            });
-            
-            localImageUrl = tempPath;
-            console.log("wxfile:// 路径已转换为临时文件路径:", tempPath);
-          } catch (error) {
-            console.error("wxfile:// 路径转换失败，尝试使用 getImageInfo:", error);
-            // 如果转换失败，尝试使用 getImageInfo 获取可用的路径
+        } catch (error) {
+          console.error("getImageInfo 失败，尝试备用方案:", error);
+          // 备用方案：如果是远程 URL，直接下载
+          const isRemoteUrl = typeof result.imageUrl === 'string' && 
+            (result.imageUrl.startsWith('http://') || result.imageUrl.startsWith('https://'));
+          if (isRemoteUrl) {
+            try {
+              localImageUrl = await this.ensureLocalImage(result.imageUrl);
+            } catch (downloadError) {
+              console.error("图片下载也失败:", downloadError);
+              localImageUrl = null; // 如果都失败，就不使用图片
+            }
+          } else {
+            // 本地路径，尝试使用 getImageInfo 再次验证
             try {
               const imageInfo = await new Promise((resolve, reject) => {
                 wx.getImageInfo({
@@ -1539,43 +1621,21 @@ Page({
               });
               localImageUrl = imageInfo.path || imageInfo.src || result.imageUrl;
             } catch (imgError) {
-              console.error("getImageInfo 也失败:", imgError);
+              console.error("备用 getImageInfo 也失败:", imgError);
               localImageUrl = result.imageUrl; // 最后使用原路径
             }
           }
+        }
+        
+        // 如果最终获取到路径，更新到 result
+        if (localImageUrl) {
+          result.imageUrl = localImageUrl;
+          this.setData({ "result.imageUrl": localImageUrl });
         } else {
-          // 其他本地路径（如临时文件路径），直接使用
-          // 但为了保险起见，也验证一下路径是否有效
-          try {
-            const fs = wx.getFileSystemManager();
-            await new Promise((resolve, reject) => {
-              fs.access({
-                path: result.imageUrl,
-                success: resolve,
-                fail: reject
-              });
-            });
-            localImageUrl = result.imageUrl;
-          } catch (error) {
-            console.warn("本地路径验证失败，尝试重新获取:", error);
-            // 如果路径无效，尝试使用 getImageInfo
-            try {
-              const imageInfo = await new Promise((resolve, reject) => {
-                wx.getImageInfo({
-                  src: result.imageUrl,
-                  success: resolve,
-                  fail: reject
-                });
-              });
-              localImageUrl = imageInfo.path || imageInfo.src || result.imageUrl;
-            } catch (imgError) {
-              console.error("getImageInfo 失败:", imgError);
-              localImageUrl = result.imageUrl;
-            }
-          }
+          console.warn("图片路径转换失败，海报将不包含图片");
         }
       } else {
-        console.warn("海报生成时没有找到图片 URL，result:", result, "result.imageUrl:", result?.imageUrl);
+        console.warn("海报生成时没有找到图片 URL");
       }
 
       // 处理文本内容，确保不会过长
@@ -1894,12 +1954,46 @@ Page({
 
   // Painter 图片生成失败
   onPainterImgErr(e) {
-    console.error("Painter 图片生成失败:", e.detail);
-    wx.hideLoading();
-    wx.showToast({
-      title: this.data.i18n.result.generationFailed,
-      icon: "error",
+    const errorDetail = e.detail || {};
+    console.error("Painter 图片生成失败:", errorDetail);
+    console.error("错误详情:", JSON.stringify(errorDetail, null, 2));
+    
+    // 记录平台信息，便于调试
+    const systemInfo = wx.getSystemInfoSync();
+    console.error("系统信息:", {
+      platform: systemInfo.platform,
+      system: systemInfo.system,
+      version: systemInfo.version
     });
+    
+    // 记录当前图片路径信息
+    if (this.data.result && this.data.result.imageUrl) {
+      console.error("当前图片路径:", this.data.result.imageUrl);
+      console.error("图片路径类型:", typeof this.data.result.imageUrl);
+    }
+    
+    wx.hideLoading();
+    
+    // 根据错误类型提供更具体的提示
+    let errorMessage = this.data.i18n.result.generationFailed;
+    if (errorDetail.errMsg) {
+      if (errorDetail.errMsg.includes("downloadFile:fail")) {
+        errorMessage = this.data.i18n.result.networkFailed;
+      } else if (errorDetail.errMsg.includes("getaddrinfo ENOTFOUND")) {
+        errorMessage = this.data.i18n.result.serverConnectionFailed;
+      } else if (errorDetail.errMsg.includes("tmp") || errorDetail.errMsg.includes("file")) {
+        errorMessage = this.data.i18n.result.tempFileFailed;
+      } else if (errorDetail.errMsg.includes("image") || errorDetail.errMsg.includes("drawImage")) {
+        errorMessage = "图片处理失败，请重试";
+      }
+    }
+    
+    wx.showToast({
+      title: errorMessage,
+      icon: "error",
+      duration: 3000,
+    });
+    
     // 清理二维码临时文件（若存在）
     if (this.qrTempPath) {
       this.cleanupTempFile(this.qrTempPath);
@@ -2865,15 +2959,26 @@ Page({
       }
 
 
-      // 检查是否是本地文件路径
+      // 检查是否是本地文件路径（Android 和 iOS 可能返回不同格式）
       if (
         remoteUrl.startsWith("http://usr/") ||
         remoteUrl.startsWith("file://") ||
-        remoteUrl.startsWith("wxfile://")
+        remoteUrl.startsWith("wxfile://") ||
+        remoteUrl.startsWith("/storage/") ||
+        remoteUrl.startsWith("/data/")
       ) {
-        // 使用转换方法
-        const convertedUrl = this.convertImageUrlForPoster(remoteUrl);
-        resolve(convertedUrl);
+        // 使用 getImageInfo 统一转换路径格式，兼容 Android 和 iOS
+        wx.getImageInfo({
+          src: remoteUrl,
+          success: (info) => {
+            const convertedUrl = info.path || info.src || remoteUrl;
+            resolve(convertedUrl);
+          },
+          fail: () => {
+            // 如果 getImageInfo 失败，直接使用原路径
+            resolve(remoteUrl);
+          }
+        });
         return;
       }
 
@@ -2903,14 +3008,26 @@ Page({
   downloadImage(remoteUrl, resolve) {
     try {
 
-      // 检查是否是本地文件路径
+      // 检查是否是本地文件路径（Android 和 iOS 可能返回不同格式）
       if (
         remoteUrl.startsWith("http://usr/") ||
-        remoteUrl.startsWith("file://")
+        remoteUrl.startsWith("file://") ||
+        remoteUrl.startsWith("wxfile://") ||
+        remoteUrl.startsWith("/storage/") ||
+        remoteUrl.startsWith("/data/")
       ) {
-        // 使用转换方法
-        const convertedUrl = this.convertImageUrlForPoster(remoteUrl);
-        resolve(convertedUrl);
+        // 使用 getImageInfo 统一转换路径格式，兼容 Android 和 iOS
+        wx.getImageInfo({
+          src: remoteUrl,
+          success: (info) => {
+            const convertedUrl = info.path || info.src || remoteUrl;
+            resolve(convertedUrl);
+          },
+          fail: () => {
+            // 如果 getImageInfo 失败，直接使用原路径
+            resolve(remoteUrl);
+          }
+        });
         return;
       }
 
