@@ -3,7 +3,7 @@ const { DEFAULT_CONFIG } = require('../constants/index.js');
 
 // 当前环境 (dev | test | prod)
 // const ENV = 'prod';
-const ENV = 'dev';
+const ENV = 'prod';
 
 // 环境配置映射
 const ENV_CONFIG = {

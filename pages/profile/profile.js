@@ -49,6 +49,7 @@ Page({
     membershipInfo: null,
     isVip: false,
     showMembershipModal: false,
+    isNewVersion: true, // 是否为新版本，用于控制会员按钮显示
   },
 
   /**
@@ -57,6 +58,7 @@ Page({
   onLoad(options) {
     this.initI18n();
     this.checkLoginStatus();
+    this.checkVersion(); // 检查版本
 
     // 监听全局401事件
     this.listenToUnauthorized();
@@ -1559,5 +1561,33 @@ Page({
     wx.switchTab({
       url: "/pages/community/community",
     });
+  },
+
+  /**
+   * 检查是否为新版本
+   */
+  async checkVersion() {
+    try {
+      // 检查是否为新版本（无论登录与否都请求）
+      const versionRes = await http.get('/config/is_new_version', {}, {
+        showLoading: false, // 不显示loading，避免影响用户体验
+      });
+      
+      if (versionRes.code === 0 && versionRes.data) {
+        const isNewVersion = versionRes.data.is_new_version || false;
+        
+        
+        this.setData({
+          isNewVersion: isNewVersion,
+        });
+        
+      }
+      
+    } catch (error) {
+      this.setData({
+        isNewVersion: false,
+      });
+      
+    }
   },
 });

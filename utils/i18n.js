@@ -34,7 +34,7 @@ const i18n = {
       forbiddenContent: "你的内容检测出敏感词请重新生成",
       insufficientPoints: "积分不足，请先签到获取积分",
       // 新增多语言
-      greetingTitle: "早上好，Chris～",
+      greetingTitle: "早上好，梦友",
       greetingSubtitle: "昨晚睡得好吗？做了什么有意思的梦吗？",
       placeholderLine1: "和我说说你的梦吧，",
       placeholderLine2: "例如：我梦见自己在天空中飞翔，",
@@ -599,7 +599,7 @@ const i18n = {
       forbiddenContent: "Your content contains sensitive words, please regenerate",
       insufficientPoints: "Insufficient points, please check in to earn points first",
       // 新增多语言
-      greetingTitle: "Good morning, Chris～",
+      greetingTitle: "Good morning, dreamer",
       greetingSubtitle: "Sleep well? Any dreams?",
       placeholderLine1: "Tell me about your dream,",
       placeholderLine2: "For example: I dreamed I was flying in the sky,",
