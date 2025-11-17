@@ -13,7 +13,7 @@
       <view class="circle-content">
         <text class="checkin-label">{{i18n.checkin.consecutiveDays}}</text>
         <view class="checkin-days">
-          <text class="days-number">{{checkinDays}}</text>
+          <text class="days-number">{{monthSigninDays}}</text>
           <text class="days-unit">{{i18n.checkin.day}}</text>
         </view>
       </view>

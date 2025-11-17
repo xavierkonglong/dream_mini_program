@@ -28,7 +28,7 @@ const i18n = {
       analyzingMessage: "解析中，请稍后查看梦境日记",
       shareTitle: "梦境解析小程序",
       timelineTitle: "梦境解析小程序 - 探索你的梦境世界",
-      checkinToGetPoints: "签到获取积分",
+      checkinToGetPoints: "签到赚积分",
       currentPoints: "当前积分",
       points: "积分",
       forbiddenContent: "你的内容检测出敏感词请重新生成",
@@ -536,7 +536,7 @@ const i18n = {
     checkin: {
       rulesTitle: "积分规则",
       rulesContent: "每日签到可获得积分奖励，连续签到天数越多，奖励越丰厚！",
-      consecutiveDays: "已连续签到",
+      consecutiveDays: "本月已签到",
       day: "天",
       checkinNow: "立即签到",
       checking: "签到中...",
@@ -1108,7 +1108,7 @@ const i18n = {
     checkin: {
       rulesTitle: "Points Rules",
       rulesContent: "Daily check-in rewards points. The more consecutive days, the richer the rewards!",
-      consecutiveDays: "Consecutive Days",
+      consecutiveDays: "This Month",
       day: "days",
       checkinNow: "Check In Now",
       checking: "Checking...",

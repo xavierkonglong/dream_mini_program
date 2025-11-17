@@ -1569,48 +1569,37 @@ Page({
     const { result } = this.data;
 
     try {
+      // 获取平台信息，用于兼容性处理
+      const systemInfo = wx.getSystemInfoSync();
+      const platform = systemInfo.platform; // 'ios' 或 'android'
+      console.log("当前平台:", platform);
+
       // 如果图片存在，确保转换为本地路径（Painter 组件需要本地路径）
       // Android 和 iOS 对路径处理不同，需要统一转换
       let localImageUrl = null;
       if (result && result.imageUrl) {
-        // 统一使用 getImageInfo 方法获取可用路径，兼容 Android 和 iOS
-        try {
-          const imageInfo = await new Promise((resolve, reject) => {
-            wx.getImageInfo({
-              src: result.imageUrl,
-              success: resolve,
-              fail: reject
-            });
-          });
-          
-          // Android 和 iOS 都返回 path 字段，这是最可靠的本地路径
-          if (imageInfo && imageInfo.path) {
-            localImageUrl = imageInfo.path;
-            console.log("图片路径转换成功:", localImageUrl);
-          } else {
-            // 降级方案：如果是远程 URL，尝试下载
-            const isRemoteUrl = typeof result.imageUrl === 'string' && 
-              (result.imageUrl.startsWith('http://') || result.imageUrl.startsWith('https://'));
-            if (isRemoteUrl) {
-              localImageUrl = await this.ensureLocalImage(result.imageUrl);
+        const imageUrlStr = String(result.imageUrl);
+        
+        // 判断路径类型
+        const isRemoteUrl = imageUrlStr.startsWith('http://') || imageUrlStr.startsWith('https://');
+        const isWxfilePath = imageUrlStr.startsWith('wxfile://');
+        const isFilePath = imageUrlStr.startsWith('file://');
+        const isTmpPath = imageUrlStr.startsWith('tmp/') || imageUrlStr.startsWith('/tmp/');
+        const isLocalPath = isWxfilePath || isFilePath || isTmpPath || imageUrlStr.startsWith('/');
+        
+        // 如果是远程 URL（HTTP 或 HTTPS），统一使用 ensureLocalImage 下载并转换为本地路径
+        // 注意：iOS 对 HTTP 协议有限制，需要在小程序后台配置合法域名
+        if (isRemoteUrl) {
+          try {
+            localImageUrl = await this.ensureLocalImage(result.imageUrl);
+            if (localImageUrl) {
+              console.log(`[${platform}] 远程图片下载并转换成功:`, localImageUrl);
             } else {
-              localImageUrl = result.imageUrl;
+              throw new Error("ensureLocalImage 返回 null");
             }
-          }
-        } catch (error) {
-          console.error("getImageInfo 失败，尝试备用方案:", error);
-          // 备用方案：如果是远程 URL，直接下载
-          const isRemoteUrl = typeof result.imageUrl === 'string' && 
-            (result.imageUrl.startsWith('http://') || result.imageUrl.startsWith('https://'));
-          if (isRemoteUrl) {
-            try {
-              localImageUrl = await this.ensureLocalImage(result.imageUrl);
-            } catch (downloadError) {
-              console.error("图片下载也失败:", downloadError);
-              localImageUrl = null; // 如果都失败，就不使用图片
-            }
-          } else {
-            // 本地路径，尝试使用 getImageInfo 再次验证
+          } catch (downloadError) {
+            console.error(`[${platform}] 远程图片下载失败:`, downloadError);
+            // 尝试使用 getImageInfo 作为备用方案（适用于已缓存的图片）
             try {
               const imageInfo = await new Promise((resolve, reject) => {
                 wx.getImageInfo({
@@ -1619,11 +1608,127 @@ Page({
                   fail: reject
                 });
               });
-              localImageUrl = imageInfo.path || imageInfo.src || result.imageUrl;
+              if (imageInfo && imageInfo.path) {
+                const infoPath = imageInfo.path;
+                // iOS 和 Android 返回的 path 格式可能不同
+                // iOS: 可能是 'tmp/xxx' 或 'wxfile://xxx'
+                // Android: 可能是 'wxfile://xxx' 或 '/data/xxx'
+                if (infoPath.startsWith('tmp/') || infoPath.startsWith('http://tmp/') || infoPath.startsWith('https://tmp/')) {
+                  // 临时路径，需要转换为持久化路径（USER_DATA_PATH）
+                  console.log(`[${platform}] 检测到临时路径，转换为持久化路径`);
+                  localImageUrl = await this.ensureLocalImage(result.imageUrl);
+                } else if (infoPath.startsWith('wxfile://')) {
+                  // 已经是持久化路径，直接使用
+                  localImageUrl = infoPath;
+                  console.log(`[${platform}] 使用 getImageInfo 返回的持久化路径:`, localImageUrl);
+                } else {
+                  // 其他格式，尝试使用 ensureLocalImage 重新下载并转换
+                  console.log(`[${platform}] 未知路径格式，尝试重新下载:`, infoPath);
+                  localImageUrl = await this.ensureLocalImage(result.imageUrl);
+                }
+              }
             } catch (imgError) {
-              console.error("备用 getImageInfo 也失败:", imgError);
-              localImageUrl = result.imageUrl; // 最后使用原路径
+              console.error(`[${platform}] getImageInfo 备用方案也失败:`, imgError);
+              localImageUrl = null;
             }
+          }
+        } 
+        // 如果是本地路径（wxfile:// 或已转换的路径），直接使用
+        // iOS 和 Android 都支持 wxfile:// 协议
+        else if (isLocalPath) {
+          // 对于 wxfile:// 路径，直接使用（iOS 和 Android 都支持）
+          if (isWxfilePath) {
+            localImageUrl = result.imageUrl;
+            console.log(`[${platform}] 检测到 wxfile:// 路径，直接使用:`, localImageUrl);
+          } 
+          // 对于 file:// 路径，在 iOS 和 Android 上可能需要转换
+          else if (isFilePath) {
+            // 尝试转换为 wxfile:// 路径，确保兼容性
+            try {
+              const imageInfo = await new Promise((resolve, reject) => {
+                wx.getImageInfo({
+                  src: result.imageUrl,
+                  success: resolve,
+                  fail: reject
+                });
+              });
+              if (imageInfo && imageInfo.path && imageInfo.path.startsWith('wxfile://')) {
+                localImageUrl = imageInfo.path;
+                console.log(`[${platform}] file:// 路径已转换为 wxfile://:`, localImageUrl);
+              } else {
+                localImageUrl = result.imageUrl;
+                console.log(`[${platform}] 保持原 file:// 路径:`, localImageUrl);
+              }
+            } catch (error) {
+              localImageUrl = result.imageUrl;
+              console.warn(`[${platform}] 路径验证失败，使用原路径:`, error);
+            }
+          }
+          // 对于 tmp/ 路径，需要转换为持久化路径
+          else if (isTmpPath) {
+            console.log(`[${platform}] 检测到临时路径，转换为持久化路径`);
+            // 如果是临时路径，需要读取并保存到 USER_DATA_PATH
+            try {
+              const fs = wx.getFileSystemManager();
+              const ext = (result.imageUrl.split(".").pop() || "png").split("?")[0];
+              const target = `${wx.env.USER_DATA_PATH}/img_${Date.now()}_${Math.floor(Math.random() * 1e6)}.${ext}`;
+              
+              // 使用 Promise 包装异步操作
+              localImageUrl = await new Promise((resolve) => {
+                fs.readFile({
+                  filePath: result.imageUrl,
+                  success: (readRes) => {
+                    fs.writeFile({
+                      filePath: target,
+                      data: readRes.data,
+                      encoding: "binary",
+                      success: () => {
+                        console.log(`[${platform}] 临时路径转换成功:`, target);
+                        resolve(target);
+                      },
+                      fail: () => {
+                        console.warn(`[${platform}] 临时路径转换失败，使用原路径`);
+                        resolve(result.imageUrl);
+                      }
+                    });
+                  },
+                  fail: () => {
+                    console.warn(`[${platform}] 读取临时文件失败，使用原路径`);
+                    resolve(result.imageUrl);
+                  }
+                });
+              });
+            } catch (error) {
+              console.warn(`[${platform}] 临时路径处理异常:`, error);
+              localImageUrl = result.imageUrl;
+            }
+          }
+          // 其他本地路径格式
+          else {
+            localImageUrl = result.imageUrl;
+            console.log(`[${platform}] 检测到其他本地路径格式，直接使用:`, localImageUrl);
+          }
+        }
+        // 其他情况（未知格式），尝试使用 getImageInfo 获取可用路径
+        else {
+          try {
+            const imageInfo = await new Promise((resolve, reject) => {
+              wx.getImageInfo({
+                src: result.imageUrl,
+                success: resolve,
+                fail: reject
+              });
+            });
+            if (imageInfo && imageInfo.path) {
+              localImageUrl = imageInfo.path;
+              console.log(`[${platform}] 通过 getImageInfo 获取路径成功:`, localImageUrl);
+            } else {
+              localImageUrl = result.imageUrl;
+              console.warn(`[${platform}] getImageInfo 未返回 path，使用原路径`);
+            }
+          } catch (error) {
+            console.error(`[${platform}] getImageInfo 失败:`, error);
+            localImageUrl = result.imageUrl; // 最后使用原路径
           }
         }
         
@@ -1631,8 +1736,9 @@ Page({
         if (localImageUrl) {
           result.imageUrl = localImageUrl;
           this.setData({ "result.imageUrl": localImageUrl });
+          console.log(`[${platform}] 最终使用的图片路径:`, localImageUrl);
         } else {
-          console.warn("图片路径转换失败，海报将不包含图片");
+          console.warn(`[${platform}] 图片路径转换失败，海报将不包含图片`);
         }
       } else {
         console.warn("海报生成时没有找到图片 URL");
