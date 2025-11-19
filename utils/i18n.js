@@ -535,7 +535,7 @@ const i18n = {
     // 签到页面
     checkin: {
       rulesTitle: "积分规则",
-      rulesContent: "每日签到可获得积分奖励，连续签到天数越多，奖励越丰厚！",
+        rulesContent: "每日签到可获得积分奖励，连续签到天数越多，奖励越丰厚！\n\n会员特权：每天签到后可解锁刮刮乐，随机获得额外积分奖励！",
       consecutiveDays: "本月已签到",
       day: "天",
       checkinNow: "立即签到",
@@ -563,6 +563,10 @@ const i18n = {
       publishTip: "发布优质内容，吸引更多点赞",
       loading: "加载中...",
       checkingText: "签到中...",
+      // 刮刮乐相关
+      scratchTitle: "刮刮乐",
+      scratchSubtitle: "刮开涂层，领取积分奖励",
+      scratchResultLabel: "恭喜获得",
     },
   },
 
@@ -1107,7 +1111,7 @@ const i18n = {
     // 签到页面
     checkin: {
       rulesTitle: "Points Rules",
-      rulesContent: "Daily check-in rewards points. The more consecutive days, the richer the rewards!",
+      rulesContent: "Daily check-in rewards points. The more consecutive days, the richer the rewards!\n\nVIP Privilege: Unlock scratch card after daily check-in to get extra random points reward!",
       consecutiveDays: "This Month",
       day: "days",
       checkinNow: "Check In Now",
@@ -1135,6 +1139,10 @@ const i18n = {
       publishTip: "Publish quality content to attract more likes",
       loading: "Loading...",
       checkingText: "Checking...",
+      // Scratch card related
+      scratchTitle: "Scratch Card",
+      scratchSubtitle: "Scratch to reveal your points reward",
+      scratchResultLabel: "You Got",
     },
   },
 };

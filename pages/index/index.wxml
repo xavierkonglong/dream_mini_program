@@ -94,7 +94,7 @@
         </view>
       </view>
 
-      <image class="input-section-v2-ip-bg" src="https://dulele.org.cn/images/assest/index_v2_ip_t.png" mode="" />
+      <image class="input-section-v2-ip-bg {{inputFocused ? 'input-focused' : ''}}" src="https://dulele.org.cn/images/assest/index_v2_ip_t.png" mode="" />
     </view>
 
     <!-- 生成类型选择 -->

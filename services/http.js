@@ -43,13 +43,6 @@ function request(options) {
     requestHeader['Authorization'] = `Bearer ${token}`;
   }
 
-  logger.info('发起请求:', {
-    url: fullUrl,
-    method,
-    data,
-    header: requestHeader
-  });
-
   return new Promise((resolve, reject) => {
     // 显示loading
     if (showLoading) {
@@ -224,13 +217,6 @@ function upload(url, filePath, name = 'file', formData = {}, options = {}) {
     requestHeader['Authorization'] = `Bearer ${token}`;
   }
 
-  logger.info('开始上传文件:', {
-    url: fullUrl,
-    filePath,
-    name,
-    formData,
-    header: requestHeader
-  });
 
   return new Promise((resolve, reject) => {
     // 显示loading
@@ -254,11 +240,6 @@ function upload(url, filePath, name = 'file', formData = {}, options = {}) {
           wx.hideLoading();
         }
         
-        logger.info('上传成功:', {
-          statusCode: res.statusCode,
-          data: res.data
-        });
-
         try {
           const data = JSON.parse(res.data);
           

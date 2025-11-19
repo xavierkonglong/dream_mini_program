@@ -279,6 +279,8 @@
 }
 
 .input-field.focused {
+  z-index: 3;
+  /* 聚焦时确保输入框在背景图片上方 */
   border-color: #8b5cf6;
   box-shadow: 0 6rpx 24rpx rgba(139, 92, 246, 0.25);
   transform: translateY(-2rpx);
@@ -382,9 +384,15 @@
   bottom: -60%;
   background: radial-gradient(38.38% 43.71% at 47.2% 53.76%, #FFFFFF 0%, rgba(173, 124, 229, 0.29) 68.4%, rgba(115, 115, 115, 0) 100%);
   z-index: 2;
-  /* 图片在视觉上显示在输入框上方 */
+  /* 默认状态：图片在视觉上显示在输入框上方 */
   pointer-events: none;
   /* 点击事件穿透，不拦截点击 */
+  transition: z-index 0.3s ease;
+}
+
+.input-section-v2-ip-bg.input-focused {
+  z-index: 0;
+  /* 输入框聚焦时：背景图片显示在下方，不遮挡文字 */
 }
 
 /* 生成类型选择 */

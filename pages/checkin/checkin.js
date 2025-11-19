@@ -14,12 +14,33 @@ Page({
     isFirstLoad: true, // 是否首次加载，防止onLoad和onShow重复请求
     language: 'zh', // 语言设置
     i18n: {}, // 国际化文本
-    taskList: []
+    taskList: [],
+    // 刮刮乐相关（简化版）
+    scratchPoints: 0,
+    scratchShow: false,
+    showScratchPopup: false, // 控制刮刮乐弹窗显示
+    canvasReady: false // Canvas 是否已准备好
   },
+
+  // 刮刮乐相关实例变量（避免频繁 setData）
+  _canvas: null,
+  _ctx: null,
+  _canvasWidth: 0,
+  _canvasHeight: 0,
+  _isScratching: false,
+  _scratchCount: 0,
+  _scratchCardData: null, // 保存刮刮乐信息
+  
+  // 🔧 测试模式：设为 true 可以重复测试刮刮乐（开发用）
+  _testMode: false,
 
   onLoad(options) {
     this.initI18n();
     this.loadCheckinData();
+  },
+
+  onReady() {
+    // 不在 onReady 时获取刮刮乐信息，改为签到成功后获取
   },
 
   onShow() {
@@ -74,7 +95,11 @@ Page({
           featureDeveloping: t('checkin.featureDeveloping'),
           publishTip: t('checkin.publishTip'),
           loading: t('checkin.loading'),
-          checkingText: t('checkin.checkingText')
+          checkingText: t('checkin.checkingText'),
+          // 刮刮乐相关
+          scratchTitle: t('checkin.scratchTitle'),
+          scratchSubtitle: t('checkin.scratchSubtitle'),
+          scratchResultLabel: t('checkin.scratchResultLabel')
         },
         app: {
           shareTitle: t('app.shareTitle'),
@@ -214,6 +239,9 @@ Page({
 
         // 重新加载签到数据，更新页面状态
         await this.loadCheckinData();
+        
+        // 签到成功后，检查刮刮乐资格
+        this.fetchScratchCardInfo();
       }
     } catch (error) {
       console.error('签到失败:', error);
@@ -317,6 +345,280 @@ Page({
       title: this.data.i18n.app?.timelineTitle || t('app.timelineTitle') || '积分任务签到',
       imageUrl: '' // 可以设置分享图片
     };
+  },
+
+  // ========== 刮刮乐（接入API）==========
+
+  /**
+   * 获取今日刮刮乐信息（接口）
+   */
+  async fetchScratchCardInfo() {
+    // 🔧 测试模式：使用模拟数据
+    if (this._testMode) {
+      console.log('【测试模式】使用模拟数据');
+      const mockData = {
+        points: 15,
+        claimed: false,
+        claimed_at: null,
+        date: new Date().toISOString().split('T')[0],
+        is_vip: true
+      };
+      
+      this._scratchCardData = mockData;
+      // 先设置积分数据并显示弹窗，Canvas 标记为未准备
+      this.setData({ 
+        scratchPoints: mockData.points,
+        showScratchPopup: true,
+        canvasReady: false
+      });
+      // 弹窗显示后，延迟初始化Canvas并绘制涂层
+      setTimeout(() => {
+        this.initScratchCard();
+      }, 300);
+      return;
+    }
+    
+    try {
+      const res = await get('/points/scratch-card');
+      
+      if (res.code === 0) {
+        const data = res.data;
+        this._scratchCardData = data;
+        
+        // 检查是否为VIP
+        if (!data.is_vip) {
+          // 没有资格，不弹窗，只显示提示
+          console.log('非VIP用户，无刮刮乐资格');
+          return;
+        }
+        
+        // 检查是否已领取
+        if (data.claimed) {
+          // 今日已领取，不弹窗
+          console.log('今日刮刮乐已领取');
+          return;
+        }
+        
+        // 有资格且未领取，先显示弹窗，Canvas 标记为未准备
+        this.setData({ 
+          scratchPoints: data.points,
+          showScratchPopup: true,
+          canvasReady: false
+        });
+        
+        // 弹窗显示后，延迟初始化Canvas并绘制涂层
+        setTimeout(() => {
+          this.initScratchCard();
+        }, 300);
+      }
+    } catch (error) {
+      console.error('获取刮刮乐信息失败:', error);
+      // 获取失败不显示提示，静默处理
+    }
+  },
+
+  /**
+   * 关闭刮刮乐弹窗
+   */
+  closeScratchPopup() {
+    this.setData({
+      showScratchPopup: false,
+      canvasReady: false // 重置 Canvas 状态
+    });
+  },
+
+  /**
+   * 初始化刮刮乐Canvas
+   */
+  initScratchCard() {
+    const query = wx.createSelectorQuery().in(this);
+    query.select('#scratchCanvas')
+      .fields({ node: true, size: true })
+      .exec((res) => {
+        if (!res[0] || !res[0].node) {
+          console.error('Canvas节点未找到');
+          return;
+        }
+        
+        const canvas = res[0].node;
+        const ctx = canvas.getContext('2d');
+        const dpr = wx.getSystemInfoSync().pixelRatio || 2;
+        const width = res[0].width;
+        const height = res[0].height;
+        
+        // 设置canvas尺寸
+        canvas.width = width * dpr;
+        canvas.height = height * dpr;
+        ctx.scale(dpr, dpr);
+        
+        // 保存到实例变量
+        this._canvas = canvas;
+        this._ctx = ctx;
+        this._canvasWidth = width;
+        this._canvasHeight = height;
+        
+        // 绘制灰色涂层
+        ctx.fillStyle = '#CCCCCC';
+        ctx.fillRect(0, 0, width, height);
+        ctx.fillStyle = '#999999';
+        ctx.font = '14px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('刮开涂层', width / 2, height / 2);
+        
+        console.log('Canvas初始化完成', { width, height, dpr });
+        
+        // Canvas 绘制完成，隐藏临时遮罩
+        this.setData({
+          canvasReady: true
+        });
+      });
+  },
+
+  /**
+   * 触摸开始
+   */
+  onScratchStart(e) {
+    if (!this._ctx || this.data.scratchShow) return;
+    this._isScratching = true;
+    this.scratch(e);
+  },
+
+  /**
+   * 触摸移动
+   */
+  onScratchMove(e) {
+    if (!this._ctx || !this._isScratching || this.data.scratchShow) return;
+    this.scratch(e);
+  },
+
+  /**
+   * 触摸结束
+   */
+  onScratchEnd(e) {
+    this._isScratching = false;
+    // 检查是否刮开足够（通过像素检测更准确）
+    this.checkScratchProgress();
+  },
+
+  /**
+   * 刮开指定位置
+   */
+  scratch(e) {
+    if (!e.touches || !e.touches[0]) return;
+    
+    // 获取触摸点相对于canvas的坐标
+    const query = wx.createSelectorQuery().in(this);
+    query.select('#scratchCanvas')
+      .boundingClientRect()
+      .exec((res) => {
+        if (!res[0]) return;
+        
+        const rect = res[0];
+        const touch = e.touches[0];
+        const x = touch.clientX - rect.left;
+        const y = touch.clientY - rect.top;
+        
+        // 清除圆形区域
+        this._ctx.globalCompositeOperation = 'destination-out';
+        this._ctx.beginPath();
+        this._ctx.arc(x, y, 25, 0, Math.PI * 2);
+        this._ctx.fill();
+        this._ctx.globalCompositeOperation = 'source-over';
+        
+        this._scratchCount++;
+      });
+  },
+
+  /**
+   * 检查刮开进度（使用像素检测）
+   */
+  checkScratchProgress() {
+    if (!this._ctx || this.data.scratchShow) return;
+    
+    try {
+      const imageData = this._ctx.getImageData(0, 0, this._canvasWidth, this._canvasHeight);
+      const pixels = imageData.data;
+      let transparentPixels = 0;
+      
+      // 检查透明像素（alpha通道为0）
+      for (let i = 0; i < pixels.length; i += 4) {
+        if (pixels[i + 3] === 0) {
+          transparentPixels++;
+        }
+      }
+      
+      const totalPixels = pixels.length / 4;
+      const ratio = transparentPixels / totalPixels;
+      
+      // 刮开超过60%就完成
+      if (ratio > 0.6) {
+        this.completeScratch();
+      }
+    } catch (e) {
+      console.error('检查刮开进度失败', e);
+    }
+  },
+
+  /**
+   * 完成刮开（调用领取接口）
+   */
+  async completeScratch() {
+    if (this.data.scratchShow) return;
+    
+    // 清除整个canvas
+    this._ctx.clearRect(0, 0, this._canvasWidth, this._canvasHeight);
+    
+    // 显示结果
+    this.setData({ scratchShow: true });
+    
+    // 🔧 测试模式：模拟领取成功
+    if (this._testMode) {
+      console.log('【测试模式】模拟领取成功');
+      wx.showToast({
+        title: `恭喜获得${this.data.scratchPoints}积分！`,
+        icon: 'success',
+        duration: 2000
+      });
+      // 刷新积分数据
+      this.loadCheckinData();
+      return;
+    }
+    
+    // 调用领取接口
+    try {
+      const res = await get('/points/scratch-card/claim');
+      
+      if (res.code === 0) {
+        const data = res.data;
+        
+        if (data.claimed) {
+          // 领取成功
+          wx.showToast({
+            title: data.message || `恭喜获得${data.points}积分！`,
+            icon: 'success',
+            duration: 2000
+          });
+          
+          // 刷新用户积分余额
+          this.loadCheckinData();
+        } else {
+          // 领取失败
+          wx.showToast({
+            title: data.message || '领取失败',
+            icon: 'none',
+            duration: 2000
+          });
+        }
+      }
+    } catch (error) {
+      console.error('领取刮刮乐积分失败:', error);
+      wx.showToast({
+        title: '领取失败，请稍后重试',
+        icon: 'none',
+        duration: 2000
+      });
+    }
   }
 });
 

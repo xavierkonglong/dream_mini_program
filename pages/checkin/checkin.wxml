@@ -45,6 +45,51 @@
     </view>
   </view>
 
+  <!-- 刮刮乐弹窗 -->
+  <van-popup 
+    show="{{ showScratchPopup }}" 
+    round
+    closeable
+    close-icon="close"
+    bind:close="closeScratchPopup"
+    custom-style="padding: 40rpx 30rpx 30rpx;"
+  >
+    <view class="scratch-popup">
+      <view class="scratch-popup-title">{{i18n.checkin.scratchTitle || '刮刮乐'}}</view>
+      <view class="scratch-popup-subtitle">{{i18n.checkin.scratchSubtitle || '刮开涂层，领取积分奖励'}}</view>
+      
+      <view class="scratch-card-wrapper">
+        <view class="scratch-card">
+          <!-- 背景层：显示积分信息 -->
+          <view class="scratch-bg">
+            <!-- 始终显示积分信息 -->
+            <view class="scratch-result">
+              <text class="result-label">{{i18n.checkin.scratchResultLabel || '恭喜获得'}}</text>
+              <view class="result-points">
+                <text class="points-number">+{{scratchPoints}}</text>
+                <text class="points-text">{{language === 'zh' ? '积分' : ' points'}}</text>
+              </view>
+            </view>
+          </view>
+          <!-- 临时遮罩层：Canvas 未加载时显示 -->
+          <view class="scratch-temp-mask" wx:if="{{!canvasReady}}">
+            <text class="temp-mask-text">刮开涂层</text>
+          </view>
+          <!-- Canvas 覆盖层：可刮涂层 -->
+          <canvas 
+            class="scratch-canvas" 
+            type="2d"
+            id="scratchCanvas"
+            disable-scroll="true"
+            bindtouchstart="onScratchStart"
+            bindtouchmove="onScratchMove"
+            bindtouchend="onScratchEnd"
+          ></canvas>
+        </view>
+      </view>
+    </view>
+  </van-popup>
+
   <!-- 任务列表 -->
   <view class="tasks-section">
     <view class="tasks-title">{{i18n.checkin.tasksTitle}}</view>
