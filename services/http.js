@@ -90,6 +90,17 @@ function request(options) {
           //   icon: 'error'
           // });
           reject(new Error(t('http.unauthorized')));
+        } else if (res.statusCode === 408) {
+          // 408 请求超时，使用后端返回的具体错误消息
+          const errorMsg = res.data?.message || t('http.timeoutMessage');
+          wx.showToast({
+            title: errorMsg,
+            icon: 'error',
+            duration: 2000
+          });
+          const error = new Error(errorMsg);
+          error.statusCode = 408;
+          reject(error);
         } else {
           // HTTP错误
           const errorMsg = `${t('http.requestFailed')} (${res.statusCode})`;

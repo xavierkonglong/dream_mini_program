@@ -269,6 +269,52 @@ Page({
           );
         }
 
+        // 解析疏导性问题JSON（轮询时也需要解析）
+        if (normalized.guidingQuestionsJson && !normalized.guidingQuestion1) {
+          try {
+            const guidingQuestions = JSON.parse(normalized.guidingQuestionsJson);
+            const questionKeys = Object.keys(guidingQuestions);
+            let question1Processed = false;
+            let question2Processed = false;
+
+            for (const key of questionKeys) {
+              if (key.startsWith("question") && guidingQuestions[key]) {
+                const questionData = guidingQuestions[key];
+                const question = questionData.question;
+                const answer = questionData.answer;
+
+                if (!question1Processed) {
+                  normalized.guidingQuestion1 = question;
+                  normalized.guidingQuestion1Answer = answer || "";
+                  if (answer) {
+                    normalized.guidingQuestion1 =
+                      question +
+                      "\n\n💭 " +
+                      this.data.i18n.result.myThinking +
+                      "：\n" +
+                      answer;
+                  }
+                  question1Processed = true;
+                } else if (!question2Processed) {
+                  normalized.guidingQuestion2 = question;
+                  normalized.guidingQuestion2Answer = answer || "";
+                  if (answer) {
+                    normalized.guidingQuestion2 =
+                      question +
+                      "\n\n💭 " +
+                      this.data.i18n.result.myThinking +
+                      "：\n" +
+                      answer;
+                  }
+                  question2Processed = true;
+                }
+              }
+            }
+          } catch (error) {
+            console.error("result.js - 轮询时解析疏导性问题JSON失败:", error);
+          }
+        }
+
         if (normalized.imageUrl) {
           const localPath = await this.ensureLocalImage(normalized.imageUrl);
           normalized.imageUrl = localPath || normalized.imageUrl;

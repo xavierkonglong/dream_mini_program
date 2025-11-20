@@ -451,14 +451,8 @@ Page({
       this.stopProgressAnimation();
       // 清除全局状态
       app.clearDreamAnalysisState();
-      // 解析失败时也清空输入框，让用户可以重新输入
-      this.setData({
-        dreamDescription: "",
-      });
-      // 清理草稿
-      storage.remove('draft.dreamDescription');
-      storage.remove('draft.isPublic');
-      storage.remove('draft.generationType');
+      // 错误时保留输入内容，让用户可以修改后重试
+      // 不清空 dreamDescription，不删除草稿
       wx.showToast({
         title: error.message || "解析失败，请重试",
         icon: "error",

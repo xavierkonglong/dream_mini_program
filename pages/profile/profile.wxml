@@ -7,7 +7,10 @@
   <view class="profile-section">
     <!-- 已登录状态 -->
     <view wx:if="{{isLoggedIn}}" class="user-info-section" bindtap="onAvatarTap">
-      <image class="avatar" src="{{userInfo.userAvatar || imageUrls.DEFAULT_AVATAR}}" mode="aspectFill"></image>
+      <view class="avatar-box">
+        <image class="avatar" src="{{userInfo.userAvatar || imageUrls.DEFAULT_AVATAR}}" mode="aspectFill"></image>
+        <image class="avatar-vip" wx:if="{{isVip}}" src="https://dulele.org.cn/images/assest/vip-avatar.png" mode="aspectFill"></image>
+      </view>
       <view class="user-details">
         <text class="username">{{userInfo.userName || i18n.profile.dreamExplorer}}</text>
         <text class="join-date" wx:if="{{userInfo.createTime}}">{{i18n.profile.joinTime}}{{userInfo.createTime}}</text>
