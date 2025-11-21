@@ -57,6 +57,16 @@
       </view>
     </view>
 
+    <!-- 周公解梦 -->
+    <view class="zhougong-section" wx:if="{{result.proMarkdown}}">
+      <view class="section-title">周公解梦</view>
+      <view class="cloud-card zhougong-card">
+        <view class="zhougong-content">
+          <text class="zhougong-text" user-select="{{true}}">{{result.proMarkdown}}</text>
+        </view>
+      </view>
+    </view>
+
     <!-- 疏导性问题 -->
     <view class="guiding-questions-section" wx:if="{{result.guidingQuestion1 || result.guidingQuestion2}}">
       <view class="section-title">{{i18n.diary.guidingQuestions}}</view>

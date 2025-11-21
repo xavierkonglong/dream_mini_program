@@ -193,10 +193,36 @@ function getDiaryDetail(postId) {
   });
 }
 
+/**
+ * 周公解梦解析
+ * @param {Object} params 参数
+ * @param {string} params.dreamDescription 梦境描述
+ * @param {string} params.dreamId 梦境解析ID
+ * @returns {Promise} 解析结果
+ */
+function analyzeZhougong(params) {
+  const currentLang = getLang();
+  const languageMap = {
+    'zh': 'zh-CN',
+    'en': 'en-US'
+  };
+  const apiLanguage = languageMap[currentLang] || 'zh-CN';
+
+  return post('/workflow/pro/analyze', {
+    dream_id: params.dreamId,
+    prompt: params.dreamDescription,
+    language: apiLanguage
+  }, {
+    showLoading: false, // 不显示全局loading，使用卡片内loading
+    timeout: 120000 // 2分钟超时
+  });
+}
+
 module.exports = {
   analyzeDream,
   analyzeDreamWithVideo,
   analyzeDreamProfessional,
+  analyzeZhougong,
   getVideoStatus,
   getDreamStatus,
   getDreamHistory,

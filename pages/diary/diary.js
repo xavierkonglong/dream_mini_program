@@ -370,6 +370,7 @@ Page({
           dreamDescription: diaryData.dreamDescription,
           keywords: keywords,
           interpretation: isProfessional ? (diaryData.proMarkdown || "") : (diaryData.interpretation || ""),
+          proMarkdown: diaryData.proMarkdown || "", // 周公解梦内容
           imagePrompt: diaryData.imagePrompt,
           imageUrl: diaryData.imageUrl,
           videoPrompt: diaryData.videoPrompt,
@@ -646,6 +647,7 @@ Page({
           dreamDescription: diaryData.dreamDescription || result.dreamDescription || "",
           keywords: keywords,
           interpretation: isProfessional ? (diaryData.proMarkdown || "") : (diaryData.interpretation || result.interpretation || ""),
+          proMarkdown: diaryData.proMarkdown || result.proMarkdown || "", // 周公解梦内容
           imagePrompt: diaryData.imagePrompt || result.imagePrompt || "",
           imageUrl: diaryData.imageUrl || result.imageUrl || null, // 重要：更新 imageUrl
           videoPrompt: diaryData.videoPrompt || result.videoPrompt || "",
@@ -849,6 +851,7 @@ Page({
           dreamDescription: diaryData.dreamDescription || result.dreamDescription || "",
           keywords: keywords,
           interpretation: isProfessional ? (diaryData.proMarkdown || "") : (diaryData.interpretation || result.interpretation || ""),
+          proMarkdown: diaryData.proMarkdown || result.proMarkdown || "", // 周公解梦内容
           imagePrompt: diaryData.imagePrompt || result.imagePrompt || "",
           // 注意：这里优先使用 API 返回的新值，如果 API 没有返回则保持旧值
           imageUrl: diaryData.imageUrl !== undefined && diaryData.imageUrl !== null ? diaryData.imageUrl : result.imageUrl,

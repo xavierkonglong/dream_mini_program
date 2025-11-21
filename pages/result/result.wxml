@@ -65,6 +65,44 @@
       </view>
     </view>
 
+    <!-- 周公解梦 -->
+    <view class="zhougong-section">
+      <view class="section-title">周公解梦</view>
+      <view class="cloud-card zhougong-card" bindtap="{{!zhougong.loaded ? 'onFetchZhougong' : ''}}">
+        <!-- 未加载状态：模糊遮罩 -->
+        <view class="zhougong-blur-wrapper" wx:if="{{!zhougong.loaded}}">
+           <!-- 模糊背景层（视觉占位） -->
+           <view class="zhougong-blur-bg">
+             <view class="blur-line" style="width: 90%"></view>
+             <view class="blur-line" style="width: 85%"></view>
+             <view class="blur-line" style="width: 95%"></view>
+             <view class="blur-line" style="width: 60%"></view>
+           </view>
+           
+           <!-- 操作层 -->
+           <view class="zhougong-action-layer">
+             <block wx:if="{{zhougong.loading}}">
+                <van-loading type="spinner" size="32px" color="#8B5CF6" vertical>
+                  <text style="color: #8B5CF6; font-size: 24rpx; margin-top: 10rpx;">正在查阅古籍...</text>
+                </van-loading>
+             </block>
+             <block wx:else>
+                <text class="unlock-text">点击查看周公解梦</text>
+                <text class="unlock-tip">探索传统文化对梦境的解读</text>
+                <view class="points-tip">
+                  <text class="points-icon">✨</text>
+                  <text class="points-text">消耗 20 积分查看</text>
+                </view>
+             </block>
+           </view>
+        </view>
+        
+        <!-- 已加载状态：内容 -->
+        <view class="zhougong-content" wx:else>
+           <text class="zhougong-text" user-select="{{true}}">{{zhougong.result}}</text>
+        </view>
+      </view>
+    </view>
 
     <!-- 疏导性问题 -->
     <view class="guiding-questions-section" wx:if="{{result.guidingQuestion1 || result.guidingQuestion2}}">

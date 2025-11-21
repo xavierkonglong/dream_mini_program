@@ -37,6 +37,12 @@ Page({
     i18n: {},
     // Painter 相关
     painterPalette: null,
+    // 周公解梦相关
+    zhougong: {
+      loading: false,
+      result: null,
+      loaded: false
+    }
   },
 
   onLoad(options) {
@@ -1262,6 +1268,65 @@ Page({
       wx.previewImage({
         urls: [result.imageUrl],
         current: result.imageUrl,
+      });
+    }
+  },
+
+  /**
+   * 获取周公解梦解析
+   */
+  async onFetchZhougong() {
+    const { zhougong, result } = this.data;
+    if (zhougong.loading || zhougong.loaded) return;
+    
+    if (!result || !result.dreamDescription) {
+       wx.showToast({ title: this.data.i18n.result.noDreamDescription, icon: 'none' });
+       return;
+    }
+
+    if (!result.analysisId) {
+       wx.showToast({ title: '缺少梦境ID', icon: 'none' });
+       return;
+    }
+
+    this.setData({
+      'zhougong.loading': true
+    });
+
+    try {
+      const dreamService = require("../../services/dream.js");
+      const res = await dreamService.analyzeZhougong({
+        dreamDescription: result.dreamDescription,
+        dreamId: result.analysisId
+      });
+      
+      if (res.code === 0 && res.data) {
+        const data = res.data;
+        // 优先使用 markdown，其次 raw_text
+        const content = data.analysis_markdown || 
+                       (data.analysis_raw ? data.analysis_raw.raw_text : '') || 
+                       (typeof data === 'string' ? data : '');
+        
+        if (!content) {
+           throw new Error("解析内容为空");
+        }
+
+        this.setData({
+          'zhougong.result': content,
+          'zhougong.loaded': true,
+          'zhougong.loading': false
+        });
+      } else {
+        throw new Error(res.message || "请求失败");
+      }
+    } catch (err) {
+      console.error("周公解梦请求失败:", err);
+      this.setData({
+        'zhougong.loading': false
+      });
+      wx.showToast({
+        title: '获取失败，请重试',
+        icon: 'none'
       });
     }
   },
